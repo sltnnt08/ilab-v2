@@ -9,6 +9,9 @@ export interface Schedule {
         name: string;
         avatar?: string;
     };
+    kelas: {
+        name: string;
+    };
     jam_mulai: string;
     jam_selesai: string;
     is_current?: boolean;
@@ -70,6 +73,11 @@ export default function TodaySchedule({ schedules, currentDay }: TodaySchedulePr
                                     <div className="flex items-center space-x-1">
                                         <User className="w-4 h-4" />
                                         <span>{schedule.guru.name}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                                            {schedule.kelas.name}
+                                        </span>
                                     </div>
                                 </div>
                             </div>

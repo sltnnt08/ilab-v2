@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Calendar, RefreshCw } from 'lucide-react';
+import { Calendar, RefreshCw, LayoutDashboard } from 'lucide-react';
 import CurrentTeacher from '@/Components/Jadwal/CurrentTeacher';
 import CurrentSubject from '@/Components/Jadwal/CurrentSubject';
 import NextSubject from '@/Components/Jadwal/NextSubject';
@@ -12,6 +12,17 @@ interface Teacher {
     name: string;
     email: string;
     avatar?: string;
+}
+
+interface Class {
+    id: number;
+    class: string;
+}
+
+interface User {
+    id: number;
+    name: string;
+    email: string;
 }
 
 interface JadwalPageProps {
@@ -28,6 +39,11 @@ interface JadwalPageProps {
     };
     todaySchedules: Schedule[];
     currentDay: string;
+    classes: Class[];
+    selectedClassId: number | null;
+    auth: {
+        user: User | null;
+    };
 }
 
 export default function Index({
@@ -35,10 +51,14 @@ export default function Index({
     nextSchedule,
     todaySchedules,
     currentDay,
+    classes,
+    selectedClassId,
+    auth,
 }: JadwalPageProps) {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showToast, setShowToast] = useState(false);
+    const [selectedClass, setSelectedClass] = useState<number | null>(selectedClassId);
 
     // Update waktu setiap detik
     useEffect(() => {
@@ -76,6 +96,20 @@ export default function Index({
         });
     };
 
+    const handleClassChange = (classId: string) => {
+        const newClassId = parseInt(classId);
+        setSelectedClass(newClassId);
+        
+        router.get(
+            route('jadwal'),
+            { class_id: newClassId },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            }
+        );
+    };
+
     return (
         <>
             <Head title="Jadwal" />
@@ -98,6 +132,19 @@ export default function Index({
                                 </h1>
                             </div>
                             <div className="flex items-center space-x-4">
+                                {/* Dropdown Kelas */}
+                                <select
+                                    value={selectedClass || ''}
+                                    onChange={(e) => handleClassChange(e.target.value)}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                >
+                                    {classes.map((kelas) => (
+                                        <option key={kelas.id} value={kelas.id}>
+                                            {kelas.class}
+                                        </option>
+                                    ))}
+                                </select>
+
                                 <button
                                     onClick={handleManualRefresh}
                                     disabled={isRefreshing}
@@ -106,14 +153,19 @@ export default function Index({
                                     <RefreshCw
                                         className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
                                     />
-                                    <span>{isRefreshing ? 'Memperbarui...' : 'Refresh'}</span>
+                                    <span className="hidden sm:inline">{isRefreshing ? 'Memperbarui...' : 'Refresh'}</span>
                                 </button>
-                                <Link
-                                    href="/"
-                                    className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
-                                >
-                                    ← Kembali ke Beranda
-                                </Link>
+
+                                {/* Tombol Dashboard untuk user yang login */}
+                                {auth.user && (
+                                    <Link
+                                        href={route('admin.dashboard')}
+                                        className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all"
+                                    >
+                                        <LayoutDashboard className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Dashboard</span>
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </div>

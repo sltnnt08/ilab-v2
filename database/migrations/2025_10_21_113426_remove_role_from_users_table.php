@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('mapels', function (Blueprint $table) {
-            $table->id();
-            // nama mapel udah disingkat. ex: Basis Data -> BSD
-            $table->string('nama_mapel');
-            $table->timestamps();
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('role');
         });
     }
 
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('mapels');
+        Schema::table('users', function (Blueprint $table) {
+            $table->enum('role', ['admin', 'student', 'guru'])->default('student')->after('email');
+        });
     }
 };
