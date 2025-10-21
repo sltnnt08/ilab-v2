@@ -34,26 +34,44 @@ class JadwalController extends Controller
         // Ambil jadwal hari ini
         $todaySchedules = $query->get()
             ->map(function ($jadwal) use ($currentTime) {
+                $jamMulai = is_string($jadwal->jam_mulai) ? $jadwal->jam_mulai : $jadwal->jam_mulai->format('H:i:s');
+                $jamSelesai = is_string($jadwal->jam_selesai) ? $jadwal->jam_selesai : $jadwal->jam_selesai->format('H:i:s');
+
                 return [
                     'id' => $jadwal->id,
-                    'mapel' => [
-                        'nama_mapel' => $jadwal->mapel->nama_mapel,
-                    ],
-                    'guru' => [
-                        'name' => $jadwal->guru->name,
-                        'avatar' => $jadwal->guru->avatar ?? null,
-                    ],
-                    'kelas' => [
-                        'name' => $jadwal->kelas->class,
-                    ],
-                    'jam_mulai' => Carbon::parse($jadwal->jam_mulai)->format('H:i'),
-                    'jam_selesai' => Carbon::parse($jadwal->jam_selesai)->format('H:i'),
-                    'is_current' => $currentTime >= $jadwal->jam_mulai && $currentTime <= $jadwal->jam_selesai,
+                    'subject' => $jadwal->mapel->nama_mapel,
+                    'teacher' => $jadwal->guru->name,
+                    'startTime' => Carbon::parse($jamMulai)->format('H:i'),
+                    'endTime' => Carbon::parse($jamSelesai)->format('H:i'),
+                    'is_current' => $currentTime >= $jamMulai && $currentTime <= $jamSelesai,
+                    'kelas' => $jadwal->kelas->class,
+                    'guru_avatar' => $jadwal->guru->avatar,
                 ];
             });
 
         // Jadwal yang sedang berlangsung
         $currentSchedule = $todaySchedules->firstWhere('is_current', true);
+
+        // Get selected class with default PIC relationship
+        $selectedClass = \App\Models\Classes::with('defaultPic')->find($selectedClassId);
+
+        // Use teacher from current schedule, or fallback to default PIC if no current schedule
+        $currentTeacher = null;
+        if ($currentSchedule) {
+            $currentTeacher = [
+                'id' => $currentSchedule['id'],
+                'name' => $currentSchedule['teacher'],
+                'email' => 'teacher@example.com',
+                'avatar' => $currentSchedule['guru_avatar'] ?? null,
+            ];
+        } elseif ($selectedClass && $selectedClass->defaultPic) {
+            $currentTeacher = [
+                'id' => $selectedClass->defaultPic->id,
+                'name' => $selectedClass->defaultPic->name,
+                'email' => 'pic@example.com',
+                'avatar' => $selectedClass->defaultPic->avatar ?? null,
+            ];
+        }
 
         // Jadwal selanjutnya
         $nextSchedule = Jadwal::with(['guru', 'mapel', 'kelas'])
@@ -65,15 +83,10 @@ class JadwalController extends Controller
 
         return Inertia::render('Jadwal/Index', [
             'currentSchedule' => [
-                'teacher' => $currentSchedule ? [
-                    'id' => $currentSchedule['guru']['name'] ? 1 : null,
-                    'name' => $currentSchedule['guru']['name'] ?? null,
-                    'email' => 'teacher@example.com',
-                    'avatar' => $currentSchedule['guru']['avatar'] ?? null,
-                ] : null,
-                'subject' => $currentSchedule['mapel']['nama_mapel'] ?? null,
-                'startTime' => $currentSchedule['jam_mulai'] ?? null,
-                'endTime' => $currentSchedule['jam_selesai'] ?? null,
+                'teacher' => $currentTeacher,
+                'subject' => $currentSchedule['subject'] ?? null,
+                'startTime' => $currentSchedule['startTime'] ?? null,
+                'endTime' => $currentSchedule['endTime'] ?? null,
             ],
             'nextSchedule' => [
                 'subject' => $nextSchedule?->mapel->nama_mapel,

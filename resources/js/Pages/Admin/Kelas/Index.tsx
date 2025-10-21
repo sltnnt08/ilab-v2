@@ -6,6 +6,7 @@ interface Kelas {
     id: number;
     class: string;
     jadwals_count: number;
+    default_pic_name: string | null;
 }
 
 interface Props {
@@ -54,6 +55,9 @@ export default function Index({ kelas, error }: Props) {
                                     Nama Kelas
                                 </th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    Penanggung Jawab Lab
+                                </th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
                                     Jumlah Jadwal
                                 </th>
                                 <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -65,7 +69,7 @@ export default function Index({ kelas, error }: Props) {
                             {kelas.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan={3}
+                                        colSpan={4}
                                         className="px-6 py-12 text-center text-gray-500 dark:text-gray-400"
                                     >
                                         Belum ada data kelas
@@ -79,6 +83,13 @@ export default function Index({ kelas, error }: Props) {
                                     >
                                         <td className="px-6 py-4 text-gray-900 dark:text-white font-medium">
                                             {item.class}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                                            {item.default_pic_name || (
+                                                <span className="text-gray-400 dark:text-gray-500 italic">
+                                                    Belum ditentukan
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                                             {item.jadwals_count} jadwal

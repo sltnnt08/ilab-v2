@@ -13,12 +13,23 @@ export default function Toast({ show, message, onClose }: ToastProps) {
     useEffect(() => {
         if (show) {
             setIsVisible(true);
-            const timer = setTimeout(() => {
+            
+            // Auto-dismiss after 5 seconds
+            const dismissTimer = setTimeout(() => {
                 setIsVisible(false);
-                setTimeout(onClose, 300);
-            }, 3000);
+            }, 5000);
 
-            return () => clearTimeout(timer);
+            // Call onClose after fade out animation
+            const closeTimer = setTimeout(() => {
+                onClose();
+            }, 5300);
+
+            return () => {
+                clearTimeout(dismissTimer);
+                clearTimeout(closeTimer);
+            };
+        } else {
+            setIsVisible(false);
         }
     }, [show, onClose]);
 

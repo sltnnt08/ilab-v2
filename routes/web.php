@@ -16,7 +16,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::resource('jadwal', \App\Http\Controllers\Admin\JadwalController::class);
     Route::resource('mapel', \App\Http\Controllers\Admin\MapelController::class);
     Route::resource('guru', \App\Http\Controllers\Admin\GuruController::class);
-    Route::resource('kelas', \App\Http\Controllers\Admin\KelasController::class);
+    Route::resource('kelas', \App\Http\Controllers\Admin\KelasController::class)->parameters([
+        'kelas' => 'kelas'
+    ]);
 });
 
 Route::get('/dashboard', function () {

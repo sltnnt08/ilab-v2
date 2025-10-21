@@ -1,11 +1,13 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Edit, Trash2, User, Mail } from 'lucide-react';
+import { Plus, Edit, Trash2, User, Mail, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { useState } from 'react';
 
 interface Guru {
     id: number;
     name: string;
     email: string;
+    avatar?: string;
     jadwals_count: number;
 }
 
@@ -14,6 +16,50 @@ interface Props {
 }
 
 export default function Index({ gurus }: Props) {
+    const [sortConfig, setSortConfig] = useState<{
+        key: keyof Guru;
+        direction: 'asc' | 'desc';
+    } | null>(null);
+
+    const sortedGurus = [...gurus].sort((a, b) => {
+        if (!sortConfig) return 0;
+
+        const { key, direction } = sortConfig;
+        const aValue = a[key];
+        const bValue = b[key];
+
+        if (aValue === undefined || bValue === undefined) return 0;
+
+        if (aValue < bValue) {
+            return direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+            return direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+    });
+
+    const handleSort = (key: keyof Guru) => {
+        setSortConfig((current) => {
+            if (current?.key === key) {
+                if (current.direction === 'asc') {
+                    return { key, direction: 'desc' };
+                }
+                return null; // Reset to unsorted
+            }
+            return { key, direction: 'asc' };
+        });
+    };
+
+    const getSortIcon = (key: keyof Guru) => {
+        if (!sortConfig || sortConfig.key !== key) {
+            return <ArrowUpDown className="h-4 w-4 text-gray-400" />;
+        }
+        return sortConfig.direction === 'asc' 
+            ? <ArrowUp className="h-4 w-4 text-blue-600" />
+            : <ArrowDown className="h-4 w-4 text-blue-600" />;
+    };
+
     const handleDelete = (id: number) => {
         if (confirm('Apakah Anda yakin ingin menghapus guru ini?')) {
             router.delete(route('admin.guru.destroy', id), {
@@ -52,14 +98,32 @@ export default function Index({ gurus }: Props) {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     No
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Nama Guru
+                                <th 
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleSort('name')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        Nama Guru
+                                        {getSortIcon('name')}
+                                    </div>
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Email
+                                <th 
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleSort('email')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        Email
+                                        {getSortIcon('email')}
+                                    </div>
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Jumlah Jadwal
+                                <th 
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleSort('jadwals_count')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        Jumlah Jadwal
+                                        {getSortIcon('jadwals_count')}
+                                    </div>
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Aksi
@@ -67,15 +131,28 @@ export default function Index({ gurus }: Props) {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {gurus.map((guru, index) => (
+                            {sortedGurus.map((guru, index) => (
                                 <tr key={guru.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {index + 1}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                                                <User className="h-5 w-5 text-purple-600" />
+                                            <div className="flex-shrink-0 h-10 w-10">
+                                                {guru.avatar ? (
+                                                    <img
+                                                        src={guru.avatar.startsWith('http') 
+                                                            ? guru.avatar 
+                                                            : `/storage/${guru.avatar}`
+                                                        }
+                                                        alt={guru.name}
+                                                        className="h-10 w-10 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                                                        <User className="h-5 w-5 text-purple-600" />
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="ml-4">
                                                 <div className="text-sm font-medium text-gray-900">

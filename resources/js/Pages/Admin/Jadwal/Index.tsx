@@ -1,6 +1,6 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Edit, Trash2, Clock, User, BookOpen, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Clock, User, BookOpen, Calendar as CalendarIcon, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useState } from 'react';
 
 interface Jadwal {
@@ -19,6 +19,10 @@ interface Props {
 
 export default function Index({ jadwals }: Props) {
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [sortConfig, setSortConfig] = useState<{
+        key: keyof Jadwal;
+        direction: 'asc' | 'desc';
+    } | null>(null);
 
     const handleDelete = (id: number) => {
         if (confirm('Apakah Anda yakin ingin menghapus jadwal ini?')) {
@@ -26,6 +30,47 @@ export default function Index({ jadwals }: Props) {
                 preserveScroll: true,
             });
         }
+    };
+
+    const handleSort = (key: keyof Jadwal) => {
+        setSortConfig((current) => {
+            if (current?.key === key) {
+                if (current.direction === 'asc') {
+                    return { key, direction: 'desc' };
+                }
+                return null;
+            }
+            return { key, direction: 'asc' };
+        });
+    };
+
+    const getSortIcon = (key: keyof Jadwal) => {
+        if (!sortConfig || sortConfig.key !== key) {
+            return <ArrowUpDown className="h-4 w-4 text-gray-400" />;
+        }
+        return sortConfig.direction === 'asc' 
+            ? <ArrowUp className="h-4 w-4 text-blue-600" />
+            : <ArrowDown className="h-4 w-4 text-blue-600" />;
+    };
+
+    const sortSchedules = (schedules: Jadwal[]) => {
+        if (!sortConfig) return schedules;
+
+        return [...schedules].sort((a, b) => {
+            const { key, direction } = sortConfig;
+            const aValue = a[key];
+            const bValue = b[key];
+
+            if (aValue === undefined || bValue === undefined) return 0;
+
+            if (aValue < bValue) {
+                return direction === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return direction === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
     };
 
     const groupedByDay = jadwals.reduce((acc, jadwal) => {
@@ -63,7 +108,7 @@ export default function Index({ jadwals }: Props) {
                 {/* Jadwal by Day */}
                 <div className="space-y-6">
                     {days.map((day) => {
-                        const daySchedules = groupedByDay[day] || [];
+                        const daySchedules = sortSchedules(groupedByDay[day] || []);
                         
                         if (daySchedules.length === 0) return null;
 
@@ -80,17 +125,41 @@ export default function Index({ jadwals }: Props) {
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Waktu
+                                                <th 
+                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                                    onClick={() => handleSort('jam_mulai')}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        Waktu
+                                                        {getSortIcon('jam_mulai')}
+                                                    </div>
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Mata Pelajaran
+                                                <th 
+                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                                    onClick={() => handleSort('mapel_name')}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        Mata Pelajaran
+                                                        {getSortIcon('mapel_name')}
+                                                    </div>
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Guru
+                                                <th 
+                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                                    onClick={() => handleSort('guru_name')}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        Guru
+                                                        {getSortIcon('guru_name')}
+                                                    </div>
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Kelas
+                                                <th 
+                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                                    onClick={() => handleSort('kelas_name')}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        Kelas
+                                                        {getSortIcon('kelas_name')}
+                                                    </div>
                                                 </th>
                                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Aksi

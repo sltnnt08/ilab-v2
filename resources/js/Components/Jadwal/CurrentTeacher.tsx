@@ -17,7 +17,7 @@ export default function CurrentTeacher({ teacher, subject }: CurrentTeacherProps
         return (
             <div className="bg-white rounded-lg shadow-md p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Guru Pengajar
+                    Penanggung Jawab Ruangan
                 </h3>
                 <div className="text-center py-8 text-gray-500">
                     Tidak ada jadwal saat ini
@@ -30,7 +30,7 @@ export default function CurrentTeacher({ teacher, subject }: CurrentTeacherProps
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold opacity-90">
-                    Guru Pengajar Saat Ini
+                    Penanggung Jawab Ruangan Saat Ini
                 </h3>
                 <LiveIndicator />
             </div>

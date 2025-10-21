@@ -1,6 +1,7 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Edit, Trash2, BookOpen } from 'lucide-react';
+import { Plus, Edit, Trash2, BookOpen, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { useState } from 'react';
 
 interface Mapel {
     id: number;
@@ -13,6 +14,50 @@ interface Props {
 }
 
 export default function Index({ mapels }: Props) {
+    const [sortConfig, setSortConfig] = useState<{
+        key: keyof Mapel;
+        direction: 'asc' | 'desc';
+    } | null>(null);
+
+    const sortedMapels = [...mapels].sort((a, b) => {
+        if (!sortConfig) return 0;
+
+        const { key, direction } = sortConfig;
+        const aValue = a[key];
+        const bValue = b[key];
+
+        if (aValue === undefined || bValue === undefined) return 0;
+
+        if (aValue < bValue) {
+            return direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+            return direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+    });
+
+    const handleSort = (key: keyof Mapel) => {
+        setSortConfig((current) => {
+            if (current?.key === key) {
+                if (current.direction === 'asc') {
+                    return { key, direction: 'desc' };
+                }
+                return null;
+            }
+            return { key, direction: 'asc' };
+        });
+    };
+
+    const getSortIcon = (key: keyof Mapel) => {
+        if (!sortConfig || sortConfig.key !== key) {
+            return <ArrowUpDown className="h-4 w-4 text-gray-400" />;
+        }
+        return sortConfig.direction === 'asc' 
+            ? <ArrowUp className="h-4 w-4 text-blue-600" />
+            : <ArrowDown className="h-4 w-4 text-blue-600" />;
+    };
+
     const handleDelete = (id: number) => {
         if (confirm('Apakah Anda yakin ingin menghapus mata pelajaran ini?')) {
             router.delete(route('admin.mapel.destroy', id), {
@@ -51,11 +96,23 @@ export default function Index({ mapels }: Props) {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     No
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Nama Mata Pelajaran
+                                <th 
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleSort('nama_mapel')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        Nama Mata Pelajaran
+                                        {getSortIcon('nama_mapel')}
+                                    </div>
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Jumlah Jadwal
+                                <th 
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleSort('jadwals_count')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        Jumlah Jadwal
+                                        {getSortIcon('jadwals_count')}
+                                    </div>
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Aksi
@@ -63,7 +120,7 @@ export default function Index({ mapels }: Props) {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {mapels.map((mapel, index) => (
+                            {sortedMapels.map((mapel, index) => (
                                 <tr key={mapel.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {index + 1}
