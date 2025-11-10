@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Classes;
-use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,15 +16,13 @@ class KelasController extends Controller
     public function index(): Response
     {
         try {
-            $kelas = Classes::with('defaultPic')
-                ->withCount('jadwals')
+            $kelas = Classes::withCount('jadwals')
                 ->orderBy('class')
                 ->get()
                 ->map(function ($kelas) {
                     return [
                         'id' => $kelas->id,
                         'class' => $kelas->class,
-                        'default_pic_name' => $kelas->defaultPic?->name,
                         'jadwals_count' => $kelas->jadwals_count,
                     ];
                 });
@@ -45,11 +42,7 @@ class KelasController extends Controller
 
     public function create(): Response
     {
-        $gurus = User::orderBy('name')->get(['id', 'name']);
-
-        return Inertia::render('Admin/Kelas/Create', [
-            'gurus' => $gurus,
-        ]);
+        return Inertia::render('Admin/Kelas/Create');
     }
 
     public function store(Request $request)
@@ -57,12 +50,10 @@ class KelasController extends Controller
         try {
             $validated = $request->validate([
                 'class' => ['required', 'string', 'max:255', 'unique:classes,class'],
-                'default_pic_id' => ['nullable', 'exists:users,id'],
             ], [
                 'class.required' => 'Nama kelas harus diisi',
                 'class.unique' => 'Kelas sudah ada',
                 'class.max' => 'Nama kelas maksimal 255 karakter',
-                'default_pic_id.exists' => 'Penanggung jawab tidak valid',
             ]);
 
             DB::beginTransaction();
@@ -87,15 +78,11 @@ class KelasController extends Controller
     public function edit(Classes $kelas): Response
     {
         try {
-            $gurus = User::orderBy('name')->get(['id', 'name']);
-
             return Inertia::render('Admin/Kelas/Edit', [
                 'kelas' => [
                     'id' => $kelas->id,
                     'class' => $kelas->class,
-                    'default_pic_id' => $kelas->default_pic_id,
                 ],
-                'gurus' => $gurus,
             ]);
         } catch (ModelNotFoundException $e) {
             abort(404, 'Kelas tidak ditemukan');
@@ -107,12 +94,10 @@ class KelasController extends Controller
         try {
             $validated = $request->validate([
                 'class' => ['required', 'string', 'max:255', 'unique:classes,class,'.$kelas->id],
-                'default_pic_id' => ['nullable', 'exists:users,id'],
             ], [
                 'class.required' => 'Nama kelas harus diisi',
                 'class.unique' => 'Kelas sudah ada',
                 'class.max' => 'Nama kelas maksimal 255 karakter',
-                'default_pic_id.exists' => 'Penanggung jawab tidak valid',
             ]);
 
             DB::beginTransaction();

@@ -2,21 +2,23 @@ import { Link, router } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Trash2 } from "lucide-react";
 
-interface Kelas {
+interface Ruangan {
     id: number;
-    class: string;
+    nama_ruangan: string;
+    keterangan: string | null;
+    default_pic_name: string | null;
     jadwals_count: number;
 }
 
 interface Props {
-    kelas: Kelas[];
+    ruangans: Ruangan[];
     error?: string;
 }
 
-export default function Index({ kelas, error }: Props) {
+export default function Index({ ruangans, error }: Props) {
     const handleDelete = (id: number, nama: string) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus kelas ${nama}?`)) {
-            router.delete(route("admin.kelas.destroy", id));
+        if (confirm(`Apakah Anda yakin ingin menghapus ruangan ${nama}?`)) {
+            router.delete(route("admin.ruangan.destroy", id));
         }
     };
 
@@ -26,17 +28,17 @@ export default function Index({ kelas, error }: Props) {
                 <div className="flex justify-between items-center mb-6">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                            Kelola Kelas
+                            Kelola Ruangan Lab
                         </h1>
                         <p className="text-gray-600 dark:text-gray-400 mt-1">
-                            Daftar semua kelas
+                            Daftar semua ruangan laboratorium
                         </p>
                     </div>
                     <Link
-                        href={route("admin.kelas.create")}
+                        href={route("admin.ruangan.create")}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
                     >
-                        + Tambah Kelas
+                        + Tambah Ruangan
                     </Link>
                 </div>
 
@@ -51,7 +53,13 @@ export default function Index({ kelas, error }: Props) {
                         <thead className="bg-gray-50 dark:bg-gray-700">
                             <tr>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                    Nama Kelas
+                                    Nama Ruangan
+                                </th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    Keterangan
+                                </th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    PIC Default
                                 </th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
                                     Jumlah Jadwal
@@ -62,23 +70,37 @@ export default function Index({ kelas, error }: Props) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                            {kelas.length === 0 ? (
+                            {ruangans.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan={3}
+                                        colSpan={5}
                                         className="px-6 py-12 text-center text-gray-500 dark:text-gray-400"
                                     >
-                                        Belum ada data kelas
+                                        Belum ada data ruangan
                                     </td>
                                 </tr>
                             ) : (
-                                kelas.map((item) => (
+                                ruangans.map((item) => (
                                     <tr
                                         key={item.id}
                                         className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                                     >
                                         <td className="px-6 py-4 text-gray-900 dark:text-white font-medium">
-                                            {item.class}
+                                            {item.nama_ruangan}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                                            {item.keterangan || (
+                                                <span className="text-gray-400 dark:text-gray-500 italic">
+                                                    -
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                                            {item.default_pic_name || (
+                                                <span className="text-gray-400 dark:text-gray-500 italic">
+                                                    Belum ditentukan
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                                             {item.jadwals_count} jadwal
@@ -87,7 +109,7 @@ export default function Index({ kelas, error }: Props) {
                                             <div className="flex gap-2 justify-end">
                                                 <Link
                                                     href={route(
-                                                        "admin.kelas.edit",
+                                                        "admin.ruangan.edit",
                                                         item.id
                                                     )}
                                                     className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -98,7 +120,7 @@ export default function Index({ kelas, error }: Props) {
                                                     onClick={() =>
                                                         handleDelete(
                                                             item.id,
-                                                            item.class
+                                                            item.nama_ruangan
                                                         )
                                                     }
                                                     className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"

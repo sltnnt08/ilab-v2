@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Jadwal;
+use App\Models\Ruangan;
 use Carbon\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,20 +16,20 @@ class JadwalController extends Controller
         $currentDay = $now->locale('id')->isoFormat('dddd');
         $currentTime = $now->format('H:i:s');
 
-        // Get all classes for dropdown
-        $classes = \App\Models\Classes::orderBy('class')->get();
+        // Get all ruangans for dropdown
+        $ruangans = Ruangan::orderBy('nama_ruangan')->get();
 
-        // Get selected class from query parameter or default to first class
-        $selectedClassId = request()->query('class_id');
+        // Get selected ruangan from query parameter or default to first ruangan
+        $selectedRuanganId = request()->query('ruangan_id');
 
-        if (! $selectedClassId && $classes->isNotEmpty()) {
-            $selectedClassId = $classes->first()->id;
+        if (! $selectedRuanganId && $ruangans->isNotEmpty()) {
+            $selectedRuanganId = $ruangans->first()->id;
         }
 
-        // Build query with class filter (always required now)
-        $query = Jadwal::with(['guru', 'mapel', 'kelas'])
+        // Build query with ruangan filter (always required now)
+        $query = Jadwal::with(['guru', 'mapel', 'kelas', 'ruangan'])
             ->where('hari', $currentDay)
-            ->where('class_id', $selectedClassId)
+            ->where('ruangan_id', $selectedRuanganId)
             ->orderBy('jam_mulai');
 
         // Ambil jadwal hari ini
@@ -52,10 +53,10 @@ class JadwalController extends Controller
         // Jadwal yang sedang berlangsung
         $currentSchedule = $todaySchedules->firstWhere('is_current', true);
 
-        // Get selected class with default PIC relationship
-        $selectedClass = \App\Models\Classes::with('defaultPic')->find($selectedClassId);
+        // Get selected ruangan with default PIC relationship
+        $selectedRuangan = Ruangan::with('defaultPic')->find($selectedRuanganId);
 
-        // Use teacher from current schedule, or fallback to default PIC if no current schedule
+        // Use teacher from current schedule, or fallback to ruangan's default PIC if no current schedule
         $currentTeacher = null;
         if ($currentSchedule) {
             $currentTeacher = [
@@ -64,19 +65,19 @@ class JadwalController extends Controller
                 'email' => 'teacher@example.com',
                 'avatar' => $currentSchedule['guru_avatar'] ?? null,
             ];
-        } elseif ($selectedClass && $selectedClass->defaultPic) {
+        } elseif ($selectedRuangan && $selectedRuangan->defaultPic) {
             $currentTeacher = [
-                'id' => $selectedClass->defaultPic->id,
-                'name' => $selectedClass->defaultPic->name,
+                'id' => $selectedRuangan->defaultPic->id,
+                'name' => $selectedRuangan->defaultPic->name,
                 'email' => 'pic@example.com',
-                'avatar' => $selectedClass->defaultPic->avatar ?? null,
+                'avatar' => $selectedRuangan->defaultPic->avatar ?? null,
             ];
         }
 
         // Jadwal selanjutnya
         $nextSchedule = Jadwal::with(['guru', 'mapel', 'kelas'])
             ->where('hari', $currentDay)
-            ->where('class_id', $selectedClassId)
+            ->where('ruangan_id', $selectedRuanganId)
             ->where('jam_mulai', '>', $currentTime)
             ->orderBy('jam_mulai')
             ->first();
@@ -95,8 +96,13 @@ class JadwalController extends Controller
             ],
             'todaySchedules' => $todaySchedules,
             'currentDay' => $currentDay,
-            'classes' => $classes,
-            'selectedClassId' => $selectedClassId ? (int) $selectedClassId : null,
+            'ruangans' => $ruangans,
+            'selectedRuanganId' => $selectedRuanganId ? (int) $selectedRuanganId : null,
+            'selectedRuangan' => $selectedRuangan ? [
+                'id' => $selectedRuangan->id,
+                'nama_ruangan' => $selectedRuangan->nama_ruangan,
+                'keterangan' => $selectedRuangan->keterangan,
+            ] : null,
             'auth' => [
                 'user' => auth()->user(),
             ],

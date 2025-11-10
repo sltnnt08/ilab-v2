@@ -1,11 +1,11 @@
-import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
-import InputLabel from '@/Components/InputLabel';
-import TextInput from '@/Components/TextInput';
-import InputError from '@/Components/InputError';
-import PrimaryButton from '@/Components/PrimaryButton';
-import { ArrowLeft } from 'lucide-react';
+import AdminLayout from "@/Layouts/AdminLayout";
+import { Head, Link, useForm } from "@inertiajs/react";
+import { FormEventHandler } from "react";
+import InputLabel from "@/Components/InputLabel";
+import TextInput from "@/Components/TextInput";
+import InputError from "@/Components/InputError";
+import PrimaryButton from "@/Components/PrimaryButton";
+import { ArrowLeft } from "lucide-react";
 
 interface Guru {
     id: number;
@@ -22,11 +22,17 @@ interface Kelas {
     class: string;
 }
 
+interface Ruangan {
+    id: number;
+    nama_ruangan: string;
+}
+
 interface Jadwal {
     id: number;
     user_id: number;
     mapel_id: number;
     class_id: number;
+    ruangan_id: number | null;
     hari: string;
     jam_mulai: string;
     jam_selesai: string;
@@ -37,13 +43,21 @@ interface Props {
     gurus: Guru[];
     mapels: Mapel[];
     kelas: Kelas[];
+    ruangans: Ruangan[];
 }
 
-export default function Edit({ jadwal, gurus, mapels, kelas }: Props) {
+export default function Edit({
+    jadwal,
+    gurus,
+    mapels,
+    kelas,
+    ruangans,
+}: Props) {
     const { data, setData, put, processing, errors } = useForm({
         user_id: jadwal.user_id.toString(),
         mapel_id: jadwal.mapel_id.toString(),
         class_id: jadwal.class_id.toString(),
+        ruangan_id: jadwal.ruangan_id?.toString() || "",
         hari: jadwal.hari,
         jam_mulai: jadwal.jam_mulai,
         jam_selesai: jadwal.jam_selesai,
@@ -51,10 +65,10 @@ export default function Edit({ jadwal, gurus, mapels, kelas }: Props) {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        put(route('admin.jadwal.update', jadwal.id));
+        put(route("admin.jadwal.update", jadwal.id));
     };
 
-    const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const days = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
     return (
         <AdminLayout header="Edit Jadwal">
@@ -62,7 +76,7 @@ export default function Edit({ jadwal, gurus, mapels, kelas }: Props) {
 
             <div className="max-w-3xl">
                 <Link
-                    href={route('admin.jadwal.index')}
+                    href={route("admin.jadwal.index")}
                     className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6"
                 >
                     <ArrowLeft className="h-4 w-4 mr-2" />
@@ -72,12 +86,17 @@ export default function Edit({ jadwal, gurus, mapels, kelas }: Props) {
                 <div className="bg-white shadow-sm rounded-lg p-6">
                     <form onSubmit={submit} className="space-y-6">
                         <div>
-                            <InputLabel htmlFor="user_id" value="Guru Pengajar *" />
+                            <InputLabel
+                                htmlFor="user_id"
+                                value="Guru Pengajar *"
+                            />
                             <select
                                 id="user_id"
                                 className="mt-1 block w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm"
                                 value={data.user_id}
-                                onChange={(e) => setData('user_id', e.target.value)}
+                                onChange={(e) =>
+                                    setData("user_id", e.target.value)
+                                }
                                 required
                             >
                                 <option value="">Pilih Guru</option>
@@ -87,16 +106,24 @@ export default function Edit({ jadwal, gurus, mapels, kelas }: Props) {
                                     </option>
                                 ))}
                             </select>
-                            <InputError message={errors.user_id} className="mt-2" />
+                            <InputError
+                                message={errors.user_id}
+                                className="mt-2"
+                            />
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="mapel_id" value="Mata Pelajaran *" />
+                            <InputLabel
+                                htmlFor="mapel_id"
+                                value="Mata Pelajaran *"
+                            />
                             <select
                                 id="mapel_id"
                                 className="mt-1 block w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm"
                                 value={data.mapel_id}
-                                onChange={(e) => setData('mapel_id', e.target.value)}
+                                onChange={(e) =>
+                                    setData("mapel_id", e.target.value)
+                                }
                                 required
                             >
                                 <option value="">Pilih Mata Pelajaran</option>
@@ -106,7 +133,10 @@ export default function Edit({ jadwal, gurus, mapels, kelas }: Props) {
                                     </option>
                                 ))}
                             </select>
-                            <InputError message={errors.mapel_id} className="mt-2" />
+                            <InputError
+                                message={errors.mapel_id}
+                                className="mt-2"
+                            />
                         </div>
 
                         <div>
@@ -115,7 +145,9 @@ export default function Edit({ jadwal, gurus, mapels, kelas }: Props) {
                                 id="class_id"
                                 className="mt-1 block w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm"
                                 value={data.class_id}
-                                onChange={(e) => setData('class_id', e.target.value)}
+                                onChange={(e) =>
+                                    setData("class_id", e.target.value)
+                                }
                                 required
                             >
                                 <option value="">Pilih Kelas</option>
@@ -125,7 +157,37 @@ export default function Edit({ jadwal, gurus, mapels, kelas }: Props) {
                                     </option>
                                 ))}
                             </select>
-                            <InputError message={errors.class_id} className="mt-2" />
+                            <InputError
+                                message={errors.class_id}
+                                className="mt-2"
+                            />
+                        </div>
+
+                        <div>
+                            <InputLabel
+                                htmlFor="ruangan_id"
+                                value="Ruangan Lab *"
+                            />
+                            <select
+                                id="ruangan_id"
+                                className="mt-1 block w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm"
+                                value={data.ruangan_id}
+                                onChange={(e) =>
+                                    setData("ruangan_id", e.target.value)
+                                }
+                                required
+                            >
+                                <option value="">Pilih Ruangan</option>
+                                {ruangans.map((ruangan) => (
+                                    <option key={ruangan.id} value={ruangan.id}>
+                                        {ruangan.nama_ruangan}
+                                    </option>
+                                ))}
+                            </select>
+                            <InputError
+                                message={errors.ruangan_id}
+                                className="mt-2"
+                            />
                         </div>
 
                         <div>
@@ -134,7 +196,9 @@ export default function Edit({ jadwal, gurus, mapels, kelas }: Props) {
                                 id="hari"
                                 className="mt-1 block w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm"
                                 value={data.hari}
-                                onChange={(e) => setData('hari', e.target.value)}
+                                onChange={(e) =>
+                                    setData("hari", e.target.value)
+                                }
                                 required
                             >
                                 <option value="">Pilih Hari</option>
@@ -144,46 +208,65 @@ export default function Edit({ jadwal, gurus, mapels, kelas }: Props) {
                                     </option>
                                 ))}
                             </select>
-                            <InputError message={errors.hari} className="mt-2" />
+                            <InputError
+                                message={errors.hari}
+                                className="mt-2"
+                            />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <InputLabel htmlFor="jam_mulai" value="Jam Mulai *" />
+                                <InputLabel
+                                    htmlFor="jam_mulai"
+                                    value="Jam Mulai *"
+                                />
                                 <TextInput
                                     id="jam_mulai"
                                     type="time"
                                     className="mt-1 block w-full"
                                     value={data.jam_mulai}
-                                    onChange={(e) => setData('jam_mulai', e.target.value)}
+                                    onChange={(e) =>
+                                        setData("jam_mulai", e.target.value)
+                                    }
                                     required
                                 />
-                                <InputError message={errors.jam_mulai} className="mt-2" />
+                                <InputError
+                                    message={errors.jam_mulai}
+                                    className="mt-2"
+                                />
                             </div>
 
                             <div>
-                                <InputLabel htmlFor="jam_selesai" value="Jam Selesai *" />
+                                <InputLabel
+                                    htmlFor="jam_selesai"
+                                    value="Jam Selesai *"
+                                />
                                 <TextInput
                                     id="jam_selesai"
                                     type="time"
                                     className="mt-1 block w-full"
                                     value={data.jam_selesai}
-                                    onChange={(e) => setData('jam_selesai', e.target.value)}
+                                    onChange={(e) =>
+                                        setData("jam_selesai", e.target.value)
+                                    }
                                     required
                                 />
-                                <InputError message={errors.jam_selesai} className="mt-2" />
+                                <InputError
+                                    message={errors.jam_selesai}
+                                    className="mt-2"
+                                />
                             </div>
                         </div>
 
                         <div className="flex items-center justify-end space-x-4 pt-4">
                             <Link
-                                href={route('admin.jadwal.index')}
+                                href={route("admin.jadwal.index")}
                                 className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                             >
                                 Batal
                             </Link>
                             <PrimaryButton disabled={processing}>
-                                {processing ? 'Menyimpan...' : 'Update Jadwal'}
+                                {processing ? "Menyimpan..." : "Update Jadwal"}
                             </PrimaryButton>
                         </div>
                     </form>

@@ -1,30 +1,32 @@
-import { useState, PropsWithChildren, ReactNode } from 'react';
-import { Link, usePage } from '@inertiajs/react';
-import { 
-    Calendar, 
-    BookOpen, 
-    Users, 
-    LayoutDashboard, 
-    Menu, 
+import { useState, PropsWithChildren, ReactNode } from "react";
+import { Link, usePage } from "@inertiajs/react";
+import {
+    Calendar,
+    BookOpen,
+    Users,
+    LayoutDashboard,
+    Menu,
     X,
     LogOut,
     ChevronDown,
-    School
-} from 'lucide-react';
+    School,
+    DoorOpen,
+} from "lucide-react";
 
-export default function AdminLayout({ 
-    header, 
-    children 
+export default function AdminLayout({
+    header,
+    children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { auth } = usePage().props as any;
 
     const navigation = [
-        { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-        { name: 'Jadwal', href: '/admin/jadwal', icon: Calendar },
-        { name: 'Mata Pelajaran', href: '/admin/mapel', icon: BookOpen },
-        { name: 'Guru', href: '/admin/guru', icon: Users },
-        { name: 'Kelas', href: '/admin/kelas', icon: School },
+        { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+        { name: "Jadwal", href: "/admin/jadwal", icon: Calendar },
+        { name: "Mata Pelajaran", href: "/admin/mapel", icon: BookOpen },
+        { name: "Guru", href: "/admin/guru", icon: Users },
+        { name: "Kelas", href: "/admin/kelas", icon: School },
+        { name: "Ruangan Lab", href: "/admin/ruangan", icon: DoorOpen },
     ];
 
     return (
@@ -32,7 +34,7 @@ export default function AdminLayout({
             {/* Sidebar Mobile */}
             <div
                 className={`fixed inset-0 z-40 lg:hidden ${
-                    sidebarOpen ? 'block' : 'hidden'
+                    sidebarOpen ? "block" : "hidden"
                 }`}
             >
                 <div
@@ -42,7 +44,9 @@ export default function AdminLayout({
 
                 <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
                     <div className="flex h-16 items-center justify-between px-4 border-b">
-                        <h2 className="text-xl font-bold text-gray-900">Admin Panel</h2>
+                        <h2 className="text-xl font-bold text-gray-900">
+                            Admin Panel
+                        </h2>
                         <button
                             onClick={() => setSidebarOpen(false)}
                             className="text-gray-500 hover:text-gray-700"
@@ -53,15 +57,17 @@ export default function AdminLayout({
 
                     <nav className="flex-1 space-y-1 px-2 py-4">
                         {navigation.map((item) => {
-                            const isActive = route().current(item.href.replace('/admin/', 'admin.') + '*');
+                            const isActive = route().current(
+                                item.href.replace("/admin/", "admin.") + "*"
+                            );
                             return (
                                 <Link
                                     key={item.name}
                                     href={item.href}
                                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg ${
                                         isActive
-                                            ? 'bg-blue-50 text-blue-700'
-                                            : 'text-gray-700 hover:bg-gray-50'
+                                            ? "bg-blue-50 text-blue-700"
+                                            : "text-gray-700 hover:bg-gray-50"
                                     }`}
                                 >
                                     <item.icon className="mr-3 h-5 w-5" />
@@ -85,15 +91,17 @@ export default function AdminLayout({
 
                     <nav className="flex-1 space-y-1 px-2 py-4">
                         {navigation.map((item) => {
-                            const isActive = route().current(item.href.replace('/admin/', 'admin.') + '*');
+                            const isActive = route().current(
+                                item.href.replace("/admin/", "admin.") + "*"
+                            );
                             return (
                                 <Link
                                     key={item.name}
                                     href={item.href}
                                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                                         isActive
-                                            ? 'bg-blue-50 text-blue-700'
-                                            : 'text-gray-700 hover:bg-gray-50'
+                                            ? "bg-blue-50 text-blue-700"
+                                            : "text-gray-700 hover:bg-gray-50"
                                     }`}
                                 >
                                     <item.icon className="mr-3 h-5 w-5" />
@@ -114,10 +122,12 @@ export default function AdminLayout({
                                 <p className="text-sm font-medium text-gray-700">
                                     {auth.user.name}
                                 </p>
-                                <p className="text-xs text-gray-500">{auth.user.email}</p>
+                                <p className="text-xs text-gray-500">
+                                    {auth.user.email}
+                                </p>
                             </div>
                             <Link
-                                href={route('logout')}
+                                href={route("logout")}
                                 method="post"
                                 as="button"
                                 className="ml-3 text-gray-400 hover:text-gray-600"

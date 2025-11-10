@@ -1,6 +1,16 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { Calendar, RefreshCw, LayoutDashboard, Clock, User as UserIcon, BookOpen, ChevronRight, CheckCircle2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Head, Link, router } from "@inertiajs/react";
+import {
+    Calendar,
+    RefreshCw,
+    LayoutDashboard,
+    Clock,
+    User as UserIcon,
+    BookOpen,
+    ChevronRight,
+    CheckCircle2,
+    DoorOpen,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Teacher {
     id: number;
@@ -9,9 +19,10 @@ interface Teacher {
     avatar?: string;
 }
 
-interface Class {
+interface Ruangan {
     id: number;
-    class: string;
+    nama_ruangan: string;
+    keterangan?: string;
 }
 
 interface User {
@@ -44,8 +55,9 @@ interface JadwalPageProps {
     };
     todaySchedules: Schedule[];
     currentDay: string;
-    classes: Class[];
-    selectedClassId: number | null;
+    ruangans: Ruangan[];
+    selectedRuanganId: number | null;
+    selectedRuangan: Ruangan | null;
     auth: {
         user: User | null;
     };
@@ -56,14 +68,17 @@ export default function Index({
     nextSchedule,
     todaySchedules,
     currentDay,
-    classes,
-    selectedClassId,
+    ruangans,
+    selectedRuanganId,
+    selectedRuangan,
     auth,
 }: JadwalPageProps) {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [justRefreshed, setJustRefreshed] = useState(false);
-    const [selectedClass, setSelectedClass] = useState<number | null>(selectedClassId);
+    const [selectedRuang, setSelectedRuang] = useState<number | null>(
+        selectedRuanganId
+    );
 
     // Update waktu setiap detik
     useEffect(() => {
@@ -79,7 +94,7 @@ export default function Index({
         const refreshInterval = setInterval(() => {
             setIsRefreshing(true);
             router.reload({
-                only: ['currentSchedule', 'nextSchedule', 'todaySchedules'],
+                only: ["currentSchedule", "nextSchedule", "todaySchedules"],
                 onFinish: () => {
                     setIsRefreshing(false);
                     setJustRefreshed(true);
@@ -95,7 +110,7 @@ export default function Index({
     const handleManualRefresh = () => {
         setIsRefreshing(true);
         router.reload({
-            only: ['currentSchedule', 'nextSchedule', 'todaySchedules'],
+            only: ["currentSchedule", "nextSchedule", "todaySchedules"],
             onFinish: () => {
                 setIsRefreshing(false);
                 setJustRefreshed(true);
@@ -105,13 +120,13 @@ export default function Index({
         });
     };
 
-    const handleClassChange = (classId: string) => {
-        const newClassId = parseInt(classId);
-        setSelectedClass(newClassId);
-        
+    const handleRuanganChange = (ruanganId: string) => {
+        const newRuanganId = parseInt(ruanganId);
+        setSelectedRuang(newRuanganId);
+
         router.get(
-            route('jadwal'),
-            { class_id: newClassId },
+            route("jadwal"),
+            { ruangan_id: newRuanganId },
             {
                 preserveState: true,
                 preserveScroll: true,
@@ -121,20 +136,24 @@ export default function Index({
 
     const calculateProgress = () => {
         if (!currentSchedule.startTime || !currentSchedule.endTime) return 0;
-        
+
         const now = new Date();
-        const [startHour, startMinute] = currentSchedule.startTime.split(':').map(Number);
-        const [endHour, endMinute] = currentSchedule.endTime.split(':').map(Number);
-        
+        const [startHour, startMinute] = currentSchedule.startTime
+            .split(":")
+            .map(Number);
+        const [endHour, endMinute] = currentSchedule.endTime
+            .split(":")
+            .map(Number);
+
         const start = new Date(now);
         start.setHours(startHour, startMinute, 0);
-        
+
         const end = new Date(now);
         end.setHours(endHour, endMinute, 0);
-        
+
         const total = end.getTime() - start.getTime();
         const elapsed = now.getTime() - start.getTime();
-        
+
         return Math.min(100, Math.max(0, (elapsed / total) * 100));
     };
 
@@ -151,20 +170,26 @@ export default function Index({
                     <div className="mx-auto max-w-7xl px-6">
                         <div className="flex h-14 justify-between items-center">
                             <div className="flex items-center space-x-2">
-                                <Calendar className="w-5 h-5 text-blue-300" />
+                                <DoorOpen className="w-5 h-5 text-emerald-300" />
                                 <h1 className="text-lg font-bold text-white">
-                                    Jadwal Pelajaran
+                                    Jadwal Ruangan Lab
                                 </h1>
                             </div>
                             <div className="flex items-center space-x-3">
                                 <select
-                                    value={selectedClass || ''}
-                                    onChange={(e) => handleClassChange(e.target.value)}
-                                    className="px-3 py-1.5 text-sm font-medium bg-white/20 text-white border border-white/30 rounded-lg backdrop-blur-sm hover:bg-white/30 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                    value={selectedRuang || ""}
+                                    onChange={(e) =>
+                                        handleRuanganChange(e.target.value)
+                                    }
+                                    className="px-3 py-1.5 text-sm font-medium bg-white/20 text-white border border-white/30 rounded-lg backdrop-blur-sm hover:bg-white/30 focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
                                 >
-                                    {classes.map((kelas) => (
-                                        <option key={kelas.id} value={kelas.id} className="text-gray-900">
-                                            {kelas.class}
+                                    {ruangans.map((ruangan) => (
+                                        <option
+                                            key={ruangan.id}
+                                            value={ruangan.id}
+                                            className="text-gray-900"
+                                        >
+                                            {ruangan.nama_ruangan}
                                         </option>
                                     ))}
                                 </select>
@@ -174,12 +199,16 @@ export default function Index({
                                     disabled={isRefreshing}
                                     className="p-1.5 text-white bg-white/20 border border-white/30 rounded-lg hover:bg-white/30 disabled:opacity-50 backdrop-blur-sm"
                                 >
-                                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                    <RefreshCw
+                                        className={`w-4 h-4 ${
+                                            isRefreshing ? "animate-spin" : ""
+                                        }`}
+                                    />
                                 </button>
 
                                 {auth.user && (
                                     <Link
-                                        href={route('admin.dashboard')}
+                                        href={route("admin.dashboard")}
                                         className="p-1.5 text-white bg-blue-500/30 border border-blue-400/30 rounded-lg hover:bg-blue-500/40 backdrop-blur-sm"
                                     >
                                         <LayoutDashboard className="w-4 h-4" />
@@ -193,6 +222,25 @@ export default function Index({
                 {/* Main Content - Single viewport, no scroll */}
                 <div className="flex-1 overflow-hidden px-6 py-4">
                     <div className="h-full mx-auto max-w-7xl flex flex-col gap-4">
+                        {/* Room Info Banner */}
+                        {selectedRuangan && (
+                            <div className="bg-gradient-to-r from-emerald-500/30 via-teal-500/30 to-cyan-500/30 backdrop-blur-lg rounded-xl p-3 border border-emerald-400/40 flex-shrink-0">
+                                <div className="flex items-center justify-center gap-3">
+                                    <DoorOpen className="w-5 h-5 text-emerald-200" />
+                                    <div className="text-center">
+                                        <div className="text-white font-bold text-lg">
+                                            {selectedRuangan.nama_ruangan}
+                                        </div>
+                                        {selectedRuangan.keterangan && (
+                                            <div className="text-emerald-200 text-xs">
+                                                {selectedRuangan.keterangan}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Top Row: Clock & Current/Next */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-shrink-0">
                             {/* Live Clock */}
@@ -201,20 +249,25 @@ export default function Index({
                                 {justRefreshed && (
                                     <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-green-500/90 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-full animate-in fade-in slide-in-from-top-2 duration-300">
                                         <CheckCircle2 className="w-3 h-3" />
-                                        <span className="font-medium">Updated</span>
+                                        <span className="font-medium">
+                                            Updated
+                                        </span>
                                     </div>
                                 )}
-                                
+
                                 <div className="text-white/80 text-xs mb-1">
-                                    {currentTime.toLocaleDateString('id-ID', { 
-                                        weekday: 'long',
-                                        day: 'numeric',
-                                        month: 'long',
-                                        year: 'numeric'
+                                    {currentTime.toLocaleDateString("id-ID", {
+                                        weekday: "long",
+                                        day: "numeric",
+                                        month: "long",
+                                        year: "numeric",
                                     })}
                                 </div>
                                 <div className="text-white text-4xl font-bold tabular-nums mb-1">
-                                    {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                    {currentTime.toLocaleTimeString("id-ID", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                    })}
                                 </div>
                                 <div className="flex items-center justify-center gap-1.5 text-xs text-green-300">
                                     <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
@@ -228,25 +281,34 @@ export default function Index({
                                 <div className="relative">
                                     <div className="flex items-center gap-2 text-blue-200 text-sm mb-2">
                                         <BookOpen className="w-4 h-4" />
-                                        <span className="font-medium">SEDANG BERLANGSUNG</span>
+                                        <span className="font-medium">
+                                            SEDANG BERLANGSUNG
+                                        </span>
                                     </div>
                                     {currentSchedule.subject ? (
                                         <>
-                                            <h3 className="text-white text-xl font-bold mb-1">{currentSchedule.subject}</h3>
+                                            <h3 className="text-white text-xl font-bold mb-1">
+                                                {currentSchedule.subject}
+                                            </h3>
                                             <div className="text-blue-200 text-sm flex items-center gap-2 mb-2">
                                                 <Clock className="w-3.5 h-3.5" />
-                                                {currentSchedule.startTime} - {currentSchedule.endTime}
+                                                {currentSchedule.startTime} -{" "}
+                                                {currentSchedule.endTime}
                                             </div>
                                             {/* Progress bar */}
                                             <div className="w-full bg-white/20 rounded-full h-1.5 overflow-hidden">
-                                                <div 
+                                                <div
                                                     className="h-full bg-gradient-to-r from-blue-400 to-green-400 transition-all duration-1000"
-                                                    style={{ width: `${progress}%` }}
+                                                    style={{
+                                                        width: `${progress}%`,
+                                                    }}
                                                 ></div>
                                             </div>
                                         </>
                                     ) : (
-                                        <p className="text-white/60 text-sm">Tidak ada jadwal saat ini</p>
+                                        <p className="text-white/60 text-sm">
+                                            Tidak ada jadwal saat ini
+                                        </p>
                                     )}
                                 </div>
                             </div>
@@ -255,18 +317,24 @@ export default function Index({
                             <div className="bg-gradient-to-br from-purple-500/30 to-pink-600/20 backdrop-blur-lg rounded-2xl p-4 border border-purple-400/30">
                                 <div className="flex items-center gap-2 text-purple-200 text-sm mb-2">
                                     <ChevronRight className="w-4 h-4" />
-                                    <span className="font-medium">SELANJUTNYA</span>
+                                    <span className="font-medium">
+                                        SELANJUTNYA
+                                    </span>
                                 </div>
                                 {nextSchedule.subject ? (
                                     <>
-                                        <h3 className="text-white text-xl font-bold mb-1">{nextSchedule.subject}</h3>
+                                        <h3 className="text-white text-xl font-bold mb-1">
+                                            {nextSchedule.subject}
+                                        </h3>
                                         <div className="text-purple-200 text-sm flex items-center gap-2">
                                             <Clock className="w-3.5 h-3.5" />
                                             {nextSchedule.startTime}
                                         </div>
                                     </>
                                 ) : (
-                                    <p className="text-white/60 text-sm">Tidak ada jadwal selanjutnya</p>
+                                    <p className="text-white/60 text-sm">
+                                        Tidak ada jadwal selanjutnya
+                                    </p>
                                 )}
                             </div>
                         </div>
@@ -290,25 +358,41 @@ export default function Index({
                                                 <div className="relative h-full flex items-end justify-center">
                                                     {/* Full Body Image - Auto scale to fill height */}
                                                     <img
-                                                        src={currentSchedule.teacher.avatar.startsWith('http') 
-                                                            ? currentSchedule.teacher.avatar 
-                                                            : `/storage/${currentSchedule.teacher.avatar}`
+                                                        src={
+                                                            currentSchedule.teacher.avatar.startsWith(
+                                                                "http"
+                                                            )
+                                                                ? currentSchedule
+                                                                      .teacher
+                                                                      .avatar
+                                                                : `/storage/${currentSchedule.teacher.avatar}`
                                                         }
-                                                        alt={currentSchedule.teacher.name}
+                                                        alt={
+                                                            currentSchedule
+                                                                .teacher.name
+                                                        }
                                                         className="h-full w-auto min-h-full object-cover object-bottom drop-shadow-2xl"
-                                                        style={{ 
-                                                            minWidth: '200px',
-                                                            maxWidth: '300px'
+                                                        style={{
+                                                            minWidth: "200px",
+                                                            maxWidth: "300px",
                                                         }}
                                                     />
-                                                    
+
                                                     {/* Overlaying Name Badge */}
                                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/95 via-slate-900/85 to-transparent backdrop-blur-md rounded-t-2xl pt-20 pb-4 px-4">
                                                         <h2 className="text-white text-xl font-bold text-center drop-shadow-lg leading-tight">
-                                                            {currentSchedule.teacher.name}
+                                                            {
+                                                                currentSchedule
+                                                                    .teacher
+                                                                    .name
+                                                            }
                                                         </h2>
                                                         <p className="text-emerald-300 text-xs text-center mt-1.5 truncate">
-                                                            {currentSchedule.teacher.email}
+                                                            {
+                                                                currentSchedule
+                                                                    .teacher
+                                                                    .email
+                                                            }
                                                         </p>
                                                     </div>
                                                 </div>
@@ -318,10 +402,16 @@ export default function Index({
                                                         <UserIcon className="w-12 h-12 text-emerald-300/60" />
                                                     </div>
                                                     <h2 className="text-white text-lg font-bold text-center px-4">
-                                                        {currentSchedule.teacher.name}
+                                                        {
+                                                            currentSchedule
+                                                                .teacher.name
+                                                        }
                                                     </h2>
                                                     <p className="text-emerald-200 text-xs text-center mt-1 px-4">
-                                                        {currentSchedule.teacher.email}
+                                                        {
+                                                            currentSchedule
+                                                                .teacher.email
+                                                        }
                                                     </p>
                                                 </div>
                                             )}
@@ -331,7 +421,9 @@ export default function Index({
                                             <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-3 border-2 border-white/20">
                                                 <UserIcon className="w-12 h-12 text-white/40" />
                                             </div>
-                                            <p className="text-white/50 text-center text-sm px-4">Tidak ada guru saat ini</p>
+                                            <p className="text-white/50 text-center text-sm px-4">
+                                                Tidak ada guru saat ini
+                                            </p>
                                         </div>
                                     )}
                                 </div>
@@ -340,7 +432,12 @@ export default function Index({
                             {/* Today's Schedule List */}
                             <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 flex flex-col overflow-hidden">
                                 <div className="p-4 border-b border-white/20 flex-shrink-0">
-                                    <h3 className="text-white font-bold text-lg">Jadwal Hari Ini - {currentDay}</h3>
+                                    <h3 className="text-white font-bold text-lg">
+                                        Jadwal Ruangan Hari Ini - {currentDay}
+                                    </h3>
+                                    <p className="text-white/60 text-xs mt-1">
+                                        Kelas yang menggunakan ruangan ini
+                                    </p>
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                                     {todaySchedules.length > 0 ? (
@@ -349,26 +446,41 @@ export default function Index({
                                                 key={schedule.id}
                                                 className={`p-3 rounded-xl border transition-all ${
                                                     schedule.is_current
-                                                        ? 'bg-gradient-to-r from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg shadow-blue-500/20'
-                                                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                                        ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg shadow-blue-500/20"
+                                                        : "bg-white/5 border-white/10 hover:bg-white/10"
                                                 }`}
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3 flex-1 min-w-0">
                                                         <div className="flex-shrink-0">
                                                             <div className="text-white font-bold text-sm">
-                                                                {schedule.startTime}
+                                                                {
+                                                                    schedule.startTime
+                                                                }
                                                             </div>
                                                             <div className="text-white/60 text-xs">
-                                                                {schedule.endTime}
+                                                                {
+                                                                    schedule.endTime
+                                                                }
                                                             </div>
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <div className="text-white font-semibold text-sm truncate">
-                                                                {schedule.subject}
+                                                            <div className="flex items-center gap-2 mb-0.5">
+                                                                <span className="text-white font-semibold text-sm truncate">
+                                                                    {
+                                                                        schedule.subject
+                                                                    }
+                                                                </span>
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-medium flex-shrink-0">
+                                                                    {
+                                                                        schedule.kelas
+                                                                    }
+                                                                </span>
                                                             </div>
                                                             <div className="text-white/70 text-xs truncate">
-                                                                {schedule.teacher}
+                                                                {
+                                                                    schedule.teacher
+                                                                }
                                                             </div>
                                                         </div>
                                                     </div>

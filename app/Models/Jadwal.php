@@ -11,6 +11,7 @@ class Jadwal extends Model
         'user_id',
         'mapel_id',
         'class_id',
+        'ruangan_id',
         'hari',
         'jam_mulai',
         'jam_selesai',
@@ -37,5 +38,10 @@ class Jadwal extends Model
     public function kelas(): BelongsTo
     {
         return $this->belongsTo(Classes::class, 'class_id');
+    }
+
+    public function ruangan(): BelongsTo
+    {
+        return $this->belongsTo(Ruangan::class);
     }
 }

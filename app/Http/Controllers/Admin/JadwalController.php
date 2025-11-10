@@ -8,12 +8,14 @@ use App\Http\Requests\Admin\UpdateJadwalRequest;
 use App\Models\Classes;
 use App\Models\Jadwal;
 use App\Models\Mapel;
+use App\Models\Ruangan;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class JadwalController extends Controller
 {
@@ -49,13 +51,14 @@ class JadwalController extends Controller
         }
     }
 
-    public function create(): Response
+    public function create(): Response|RedirectResponse
     {
         try {
             return Inertia::render('Admin/Jadwal/Create', [
                 'gurus' => User::select('id', 'name')->orderBy('name')->get(),
                 'mapels' => Mapel::select('id', 'nama_mapel')->orderBy('nama_mapel')->get(),
                 'kelas' => Classes::select('id', 'class')->orderBy('class')->get(),
+                'ruangans' => Ruangan::select('id', 'nama_ruangan')->orderBy('nama_ruangan')->get(),
             ]);
         } catch (\Exception $e) {
             Log::error('Error loading create jadwal form: '.$e->getMessage());
@@ -105,7 +108,7 @@ class JadwalController extends Controller
         }
     }
 
-    public function edit(Jadwal $jadwal): Response
+    public function edit(Jadwal $jadwal): Response|RedirectResponse
     {
         try {
             return Inertia::render('Admin/Jadwal/Edit', [
@@ -114,6 +117,7 @@ class JadwalController extends Controller
                     'user_id' => $jadwal->user_id,
                     'mapel_id' => $jadwal->mapel_id,
                     'class_id' => $jadwal->class_id,
+                    'ruangan_id' => $jadwal->ruangan_id,
                     'hari' => $jadwal->hari,
                     'jam_mulai' => $jadwal->jam_mulai,
                     'jam_selesai' => $jadwal->jam_selesai,
@@ -121,6 +125,7 @@ class JadwalController extends Controller
                 'gurus' => User::select('id', 'name')->orderBy('name')->get(),
                 'mapels' => Mapel::select('id', 'nama_mapel')->orderBy('nama_mapel')->get(),
                 'kelas' => Classes::select('id', 'class')->orderBy('class')->get(),
+                'ruangans' => Ruangan::select('id', 'nama_ruangan')->orderBy('nama_ruangan')->get(),
             ]);
         } catch (ModelNotFoundException $e) {
             return redirect()->route('admin.jadwal.index')
