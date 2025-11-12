@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BreakTime;
 use App\Models\Jadwal;
 use App\Models\Ruangan;
+use App\Models\Video;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -82,6 +85,26 @@ class JadwalController extends Controller
             ->orderBy('jam_mulai')
             ->first();
 
+        // Check if it's break time using defined break_times
+        $isBreakTime = $this->checkIfBreakTime($currentDay, $currentTime);
+
+        // Get active videos for break time
+        $videos = [];
+        if ($isBreakTime) {
+            $videos = Video::where('is_active', true)
+                ->orderBy('urutan')
+                ->get()
+                ->map(function ($video) {
+                    return [
+                        'id' => $video->id,
+                        'judul' => $video->judul,
+                        'deskripsi' => $video->deskripsi,
+                        'file_url' => Storage::url($video->file_path),
+                        'thumbnail_url' => $video->thumbnail_path ? Storage::url($video->thumbnail_path) : null,
+                    ];
+                });
+        }
+
         return Inertia::render('Jadwal/Index', [
             'currentSchedule' => [
                 'teacher' => $currentTeacher,
@@ -103,9 +126,41 @@ class JadwalController extends Controller
                 'nama_ruangan' => $selectedRuangan->nama_ruangan,
                 'keterangan' => $selectedRuangan->keterangan,
             ] : null,
+            'isBreakTime' => $isBreakTime,
+            'videos' => $videos,
             'auth' => [
                 'user' => auth()->user(),
             ],
         ]);
+    }
+
+    /**
+     * Check if current time is within any defined break time
+     */
+    private function checkIfBreakTime(string $currentDay, string $currentTime): bool
+    {
+        $breakTimes = BreakTime::where('is_active', true)
+            ->orderBy('urutan')
+            ->get();
+
+        foreach ($breakTimes as $breakTime) {
+            // Check if break time applies to current day
+            // If hari is null or empty, it applies to all days
+            if ($breakTime->hari !== null && count($breakTime->hari) > 0) {
+                if (! in_array($currentDay, $breakTime->hari)) {
+                    continue;
+                }
+            }
+
+            // Check if current time is within break time range
+            $jamMulai = is_string($breakTime->jam_mulai) ? $breakTime->jam_mulai : $breakTime->jam_mulai->format('H:i:s');
+            $jamSelesai = is_string($breakTime->jam_selesai) ? $breakTime->jam_selesai : $breakTime->jam_selesai->format('H:i:s');
+
+            if ($currentTime >= $jamMulai && $currentTime <= $jamSelesai) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

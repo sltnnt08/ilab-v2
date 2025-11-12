@@ -20,6 +20,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         'kelas' => 'kelas',
     ]);
     Route::resource('ruangan', \App\Http\Controllers\Admin\RuanganController::class);
+    Route::resource('video', \App\Http\Controllers\Admin\VideoController::class);
+    Route::resource('break-time', \App\Http\Controllers\Admin\BreakTimeController::class);
 });
 
 Route::get('/dashboard', function () {

@@ -11,6 +11,7 @@ import {
     ChevronDown,
     School,
     DoorOpen,
+    Video,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -27,6 +28,7 @@ export default function AdminLayout({
         { name: "Guru", href: "/admin/guru", icon: Users },
         { name: "Kelas", href: "/admin/kelas", icon: School },
         { name: "Ruangan Lab", href: "/admin/ruangan", icon: DoorOpen },
+        { name: "Video Istirahat", href: "/admin/video", icon: Video },
     ];
 
     return (

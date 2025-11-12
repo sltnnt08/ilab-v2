@@ -2,13 +2,12 @@ import { Head, Link, router } from "@inertiajs/react";
 import {
     Calendar,
     RefreshCw,
-    LayoutDashboard,
     Clock,
     User as UserIcon,
     BookOpen,
-    ChevronRight,
-    CheckCircle2,
-    DoorOpen,
+    Video as VideoIcon,
+    Sparkles,
+    ArrowRight,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -41,6 +40,14 @@ interface Schedule {
     kelas: string;
 }
 
+interface Video {
+    id: number;
+    judul: string;
+    deskripsi: string | null;
+    file_url: string;
+    thumbnail_url: string | null;
+}
+
 interface JadwalPageProps {
     currentSchedule: {
         teacher: Teacher | null;
@@ -58,6 +65,8 @@ interface JadwalPageProps {
     ruangans: Ruangan[];
     selectedRuanganId: number | null;
     selectedRuangan: Ruangan | null;
+    isBreakTime: boolean;
+    videos: Video[];
     auth: {
         user: User | null;
     };
@@ -71,14 +80,25 @@ export default function Index({
     ruangans,
     selectedRuanganId,
     selectedRuangan,
+    isBreakTime,
+    videos,
     auth,
 }: JadwalPageProps) {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [justRefreshed, setJustRefreshed] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
     const [selectedRuang, setSelectedRuang] = useState<number | null>(
         selectedRuanganId
     );
+    const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+
+    // Reset video index when break time ends
+    useEffect(() => {
+        if (!isBreakTime) {
+            setCurrentVideoIndex(0);
+        }
+    }, [isBreakTime]);
 
     // Update waktu setiap detik
     useEffect(() => {
@@ -89,17 +109,43 @@ export default function Index({
         return () => clearInterval(timer);
     }, []);
 
-    // Auto-refresh data setiap 30 detik
+    // Handle notification fade out animation
+    useEffect(() => {
+        if (justRefreshed) {
+            setIsClosing(false);
+            // Start fade out animation after 1.7 seconds
+            const fadeOutTimer = setTimeout(() => {
+                setIsClosing(true);
+            }, 1700);
+
+            // Remove notification completely after animation finishes
+            const removeTimer = setTimeout(() => {
+                setJustRefreshed(false);
+                setIsClosing(false);
+            }, 2000);
+
+            return () => {
+                clearTimeout(fadeOutTimer);
+                clearTimeout(removeTimer);
+            };
+        }
+    }, [justRefreshed]);
+
+    // Auto-refresh data setiap 30 detik - include isBreakTime and videos
     useEffect(() => {
         const refreshInterval = setInterval(() => {
             setIsRefreshing(true);
             router.reload({
-                only: ["currentSchedule", "nextSchedule", "todaySchedules"],
+                only: [
+                    "currentSchedule",
+                    "nextSchedule",
+                    "todaySchedules",
+                    "isBreakTime",
+                    "videos",
+                ],
                 onFinish: () => {
                     setIsRefreshing(false);
                     setJustRefreshed(true);
-                    // Hide indicator after 2 seconds
-                    setTimeout(() => setJustRefreshed(false), 2000);
                 },
             });
         }, 30000);
@@ -110,12 +156,16 @@ export default function Index({
     const handleManualRefresh = () => {
         setIsRefreshing(true);
         router.reload({
-            only: ["currentSchedule", "nextSchedule", "todaySchedules"],
+            only: [
+                "currentSchedule",
+                "nextSchedule",
+                "todaySchedules",
+                "isBreakTime",
+                "videos",
+            ],
             onFinish: () => {
                 setIsRefreshing(false);
                 setJustRefreshed(true);
-                // Hide indicator after 2 seconds
-                setTimeout(() => setJustRefreshed(false), 2000);
             },
         });
     };
@@ -163,348 +213,460 @@ export default function Index({
         <>
             <Head title="Jadwal" />
 
-            {/* Full viewport container */}
-            <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 overflow-hidden">
-                {/* Compact Header */}
-                <nav className="bg-white/10 backdrop-blur-lg border-b border-white/20 flex-shrink-0">
-                    <div className="mx-auto max-w-7xl px-6">
-                        <div className="flex h-14 justify-between items-center">
-                            <div className="flex items-center space-x-2">
-                                <DoorOpen className="w-5 h-5 text-emerald-300" />
-                                <h1 className="text-lg font-bold text-white">
-                                    Jadwal Ruangan Lab
-                                </h1>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                                <select
-                                    value={selectedRuang || ""}
-                                    onChange={(e) =>
-                                        handleRuanganChange(e.target.value)
-                                    }
-                                    className="px-3 py-1.5 text-sm font-medium bg-white/20 text-white border border-white/30 rounded-lg backdrop-blur-sm hover:bg-white/30 focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
-                                >
-                                    {ruangans.map((ruangan) => (
-                                        <option
-                                            key={ruangan.id}
-                                            value={ruangan.id}
-                                            className="text-gray-900"
-                                        >
-                                            {ruangan.nama_ruangan}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                <button
-                                    onClick={handleManualRefresh}
-                                    disabled={isRefreshing}
-                                    className="p-1.5 text-white bg-white/20 border border-white/30 rounded-lg hover:bg-white/30 disabled:opacity-50 backdrop-blur-sm"
-                                >
-                                    <RefreshCw
-                                        className={`w-4 h-4 ${
-                                            isRefreshing ? "animate-spin" : ""
-                                        }`}
-                                    />
-                                </button>
-
-                                {auth.user && (
-                                    <Link
-                                        href={route("admin.dashboard")}
-                                        className="p-1.5 text-white bg-blue-500/30 border border-blue-400/30 rounded-lg hover:bg-blue-500/40 backdrop-blur-sm"
-                                    >
-                                        <LayoutDashboard className="w-4 h-4" />
-                                    </Link>
-                                )}
-                            </div>
+            {/* Modern Bento-Style Layout for Smart TV */}
+            <div className="h-screen w-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50 dark:from-gray-950 dark:via-blue-950 dark:to-indigo-950 overflow-hidden p-6 flex flex-col gap-4">
+                {/* Top Bar - Minimalist */}
+                <div className="flex items-center justify-between flex-shrink-0">
+                    {/* Logo & Room Info */}
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                            <BookOpen className="w-7 h-7 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                {selectedRuangan?.nama_ruangan || "Jadwal Lab"}
+                            </h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {currentDay} • Pembaruan Otomatis
+                            </p>
                         </div>
                     </div>
-                </nav>
 
-                {/* Main Content - Single viewport, no scroll */}
-                <div className="flex-1 overflow-hidden px-6 py-4">
-                    <div className="h-full mx-auto max-w-7xl flex flex-col gap-4">
-                        {/* Room Info Banner */}
-                        {selectedRuangan && (
-                            <div className="bg-gradient-to-r from-emerald-500/30 via-teal-500/30 to-cyan-500/30 backdrop-blur-lg rounded-xl p-3 border border-emerald-400/40 flex-shrink-0">
-                                <div className="flex items-center justify-center gap-3">
-                                    <DoorOpen className="w-5 h-5 text-emerald-200" />
-                                    <div className="text-center">
-                                        <div className="text-white font-bold text-lg">
-                                            {selectedRuangan.nama_ruangan}
-                                        </div>
-                                        {selectedRuangan.keterangan && (
-                                            <div className="text-emerald-200 text-xs">
-                                                {selectedRuangan.keterangan}
-                                            </div>
+                    {/* Room Selector & Refresh */}
+                    <div className="flex items-center gap-3">
+                        <select
+                            value={selectedRuang || ""}
+                            onChange={(e) =>
+                                handleRuanganChange(e.target.value)
+                            }
+                            className="pl-4 pr-10 py-3 text-sm font-semibold bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl text-gray-900 dark:text-white border-2 border-gray-200 dark:border-gray-700 rounded-2xl hover:border-blue-400 dark:hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer appearance-none"
+                            style={{
+                                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%232563eb' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                                backgroundPosition: "right 0.75rem center",
+                                backgroundSize: "1.5em 1.5em",
+                                backgroundRepeat: "no-repeat",
+                            }}
+                        >
+                            {ruangans.map((ruangan) => (
+                                <option key={ruangan.id} value={ruangan.id}>
+                                    {ruangan.nama_ruangan}
+                                </option>
+                            ))}
+                        </select>
+
+                        <button
+                            onClick={handleManualRefresh}
+                            disabled={isRefreshing}
+                            className="p-3 rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50 transition-all group"
+                        >
+                            <RefreshCw
+                                className={`w-5 h-5 text-blue-600 dark:text-blue-400 ${
+                                    isRefreshing
+                                        ? "animate-spin"
+                                        : "group-hover:rotate-180"
+                                } transition-transform duration-500`}
+                            />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Main Bento Grid Layout */}
+                <div className="flex-1 flex flex-col gap-4 min-h-0">
+                    {/* Top Row - 3 Info Cards with Fixed Height */}
+                    <div className="grid grid-cols-12 gap-4 h-[200px]">
+                        {/* Clock Card */}
+                        <div className="col-span-4 bg-gradient-to-br from-white/90 to-white/70 dark:from-gray-900/90 dark:to-gray-900/70 backdrop-blur-xl rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full -mr-16 -mt-16"></div>
+                            <div className="relative">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                                        <Clock className="w-5 h-5 text-white" />
+                                    </div>
+                                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                        Waktu Saat Ini
+                                    </span>
+                                </div>
+                                <div>
+                                    <h3 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent tabular-nums mb-2">
+                                        {currentTime.toLocaleTimeString(
+                                            "id-ID",
+                                            {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            }
                                         )}
+                                    </h3>
+                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                        <Calendar className="w-4 h-4" />
+                                        <span className="text-lg font-semibold">
+                                            {currentTime.toLocaleDateString(
+                                                "id-ID",
+                                                {
+                                                    weekday: "long",
+                                                    day: "numeric",
+                                                    month: "long",
+                                                    year: "numeric",
+                                                }
+                                            )}
+                                        </span>
+                                    </div>
+                                    {/* Invisible spacer to match other cards' height */}
+                                    <div className="mt-4">
+                                        <div className="h-2 opacity-0"></div>
+                                        <p className="text-xs opacity-0 mt-2">
+                                            Spacer
+                                        </p>
                                     </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
 
-                        {/* Top Row: Clock & Current/Next */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-shrink-0">
-                            {/* Live Clock */}
-                            <div className="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-lg rounded-2xl p-4 border border-white/20 text-center relative">
-                                {/* Refresh Success Indicator */}
-                                {justRefreshed && (
-                                    <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-green-500/90 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-full animate-in fade-in slide-in-from-top-2 duration-300">
-                                        <CheckCircle2 className="w-3 h-3" />
-                                        <span className="font-medium">
-                                            Updated
-                                        </span>
+                        {/* Current Schedule Card */}
+                        <div className="col-span-4 bg-gradient-to-br from-white/90 to-white/70 dark:from-gray-900/90 dark:to-gray-900/70 backdrop-blur-xl rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full -mr-16 -mt-16"></div>
+                            <div className="relative">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                                        <BookOpen className="w-5 h-5 text-white" />
                                     </div>
-                                )}
+                                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                        Sedang Berlangsung
+                                    </span>
+                                </div>
 
-                                <div className="text-white/80 text-xs mb-1">
-                                    {currentTime.toLocaleDateString("id-ID", {
-                                        weekday: "long",
-                                        day: "numeric",
-                                        month: "long",
-                                        year: "numeric",
-                                    })}
-                                </div>
-                                <div className="text-white text-4xl font-bold tabular-nums mb-1">
-                                    {currentTime.toLocaleTimeString("id-ID", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                    })}
-                                </div>
-                                <div className="flex items-center justify-center gap-1.5 text-xs text-green-300">
-                                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                                    Auto-refresh 30s
-                                </div>
-                            </div>
-
-                            {/* Current Subject */}
-                            <div className="bg-gradient-to-br from-blue-500/30 to-blue-600/20 backdrop-blur-lg rounded-2xl p-4 border border-blue-400/30 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16"></div>
-                                <div className="relative">
-                                    <div className="flex items-center gap-2 text-blue-200 text-sm mb-2">
-                                        <BookOpen className="w-4 h-4" />
-                                        <span className="font-medium">
-                                            SEDANG BERLANGSUNG
-                                        </span>
-                                    </div>
-                                    {currentSchedule.subject ? (
-                                        <>
-                                            <h3 className="text-white text-xl font-bold mb-1">
-                                                {currentSchedule.subject}
-                                            </h3>
-                                            <div className="text-blue-200 text-sm flex items-center gap-2 mb-2">
-                                                <Clock className="w-3.5 h-3.5" />
+                                {currentSchedule.subject ? (
+                                    <div>
+                                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                            {currentSchedule.subject}
+                                        </h3>
+                                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                            <Clock className="w-4 h-4" />
+                                            <span className="text-lg font-semibold">
                                                 {currentSchedule.startTime} -{" "}
                                                 {currentSchedule.endTime}
-                                            </div>
-                                            {/* Progress bar */}
-                                            <div className="w-full bg-white/20 rounded-full h-1.5 overflow-hidden">
+                                            </span>
+                                        </div>
+                                        {/* Progress Bar */}
+                                        <div className="mt-4">
+                                            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-gradient-to-r from-blue-400 to-green-400 transition-all duration-1000"
+                                                    className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-1000"
                                                     style={{
                                                         width: `${progress}%`,
                                                     }}
                                                 ></div>
                                             </div>
-                                        </>
-                                    ) : (
-                                        <p className="text-white/60 text-sm">
-                                            Tidak ada jadwal saat ini
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Next Subject */}
-                            <div className="bg-gradient-to-br from-purple-500/30 to-pink-600/20 backdrop-blur-lg rounded-2xl p-4 border border-purple-400/30">
-                                <div className="flex items-center gap-2 text-purple-200 text-sm mb-2">
-                                    <ChevronRight className="w-4 h-4" />
-                                    <span className="font-medium">
-                                        SELANJUTNYA
-                                    </span>
-                                </div>
-                                {nextSchedule.subject ? (
-                                    <>
-                                        <h3 className="text-white text-xl font-bold mb-1">
-                                            {nextSchedule.subject}
-                                        </h3>
-                                        <div className="text-purple-200 text-sm flex items-center gap-2">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            {nextSchedule.startTime}
                                         </div>
-                                    </>
+                                    </div>
                                 ) : (
-                                    <p className="text-white/60 text-sm">
-                                        Tidak ada jadwal selanjutnya
-                                    </p>
+                                    <div>
+                                        <h3 className="text-3xl font-bold text-gray-400 dark:text-gray-600 mb-2">
+                                            Tidak ada kelas
+                                        </h3>
+                                        <div className="flex items-center gap-2 text-gray-400 dark:text-gray-600">
+                                            <Clock className="w-4 h-4" />
+                                            <span className="text-lg font-semibold">
+                                                --:-- - --:--
+                                            </span>
+                                        </div>
+                                        {/* Empty Progress Bar */}
+                                        <div className="mt-4">
+                                            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                <div className="h-full bg-gray-300 dark:bg-gray-600 w-0"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Bottom Section: Teacher Image + Schedule List */}
-                        <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 flex-1 overflow-hidden">
-                            {/* Teacher Image - No Box, Same Height as Schedule */}
-                            <div className="relative flex flex-col items-center justify-start h-full">
-                                {/* Title Above Image */}
-                                <div className="mb-3 px-4 py-2 bg-emerald-500/30 backdrop-blur-sm rounded-xl border border-emerald-400/30">
-                                    <div className="text-emerald-200 text-xs font-bold uppercase tracking-wider text-center whitespace-nowrap">
-                                        Penanggung Jawab Ruangan
+                        {/* Next Schedule Card */}
+                        <div className="col-span-4 bg-gradient-to-br from-white/90 to-white/70 dark:from-gray-900/90 dark:to-gray-900/70 backdrop-blur-xl rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-sky-500/10 to-blue-500/10 rounded-full -mr-16 -mt-16"></div>
+                            <div className="relative">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center">
+                                        <ArrowRight className="w-5 h-5 text-white" />
                                     </div>
+                                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                        Jadwal Berikutnya
+                                    </span>
                                 </div>
 
-                                {/* Teacher Image Container */}
-                                <div className="relative flex-1 w-full flex items-end justify-center overflow-hidden">
-                                    {currentSchedule.teacher ? (
-                                        <>
-                                            {currentSchedule.teacher.avatar ? (
-                                                <div className="relative h-full flex items-end justify-center">
-                                                    {/* Full Body Image - Auto scale to fill height */}
-                                                    <img
-                                                        src={
-                                                            currentSchedule.teacher.avatar.startsWith(
-                                                                "http"
-                                                            )
-                                                                ? currentSchedule
-                                                                      .teacher
-                                                                      .avatar
-                                                                : `/storage/${currentSchedule.teacher.avatar}`
-                                                        }
-                                                        alt={
-                                                            currentSchedule
-                                                                .teacher.name
-                                                        }
-                                                        className="h-full w-auto min-h-full object-cover object-bottom drop-shadow-2xl"
-                                                        style={{
-                                                            minWidth: "200px",
-                                                            maxWidth: "300px",
-                                                        }}
-                                                    />
-
-                                                    {/* Overlaying Name Badge */}
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/95 via-slate-900/85 to-transparent backdrop-blur-md rounded-t-2xl pt-20 pb-4 px-4">
-                                                        <h2 className="text-white text-xl font-bold text-center drop-shadow-lg leading-tight">
-                                                            {
-                                                                currentSchedule
-                                                                    .teacher
-                                                                    .name
-                                                            }
-                                                        </h2>
-                                                        <p className="text-emerald-300 text-xs text-center mt-1.5 truncate">
-                                                            {
-                                                                currentSchedule
-                                                                    .teacher
-                                                                    .email
-                                                            }
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-col items-center justify-center h-full">
-                                                    <div className="w-24 h-24 rounded-full bg-emerald-500/20 flex items-center justify-center mb-3 border-2 border-emerald-400/30">
-                                                        <UserIcon className="w-12 h-12 text-emerald-300/60" />
-                                                    </div>
-                                                    <h2 className="text-white text-lg font-bold text-center px-4">
-                                                        {
-                                                            currentSchedule
-                                                                .teacher.name
-                                                        }
-                                                    </h2>
-                                                    <p className="text-emerald-200 text-xs text-center mt-1 px-4">
-                                                        {
-                                                            currentSchedule
-                                                                .teacher.email
-                                                        }
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center h-full">
-                                            <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-3 border-2 border-white/20">
-                                                <UserIcon className="w-12 h-12 text-white/40" />
-                                            </div>
-                                            <p className="text-white/50 text-center text-sm px-4">
-                                                Tidak ada guru saat ini
-                                            </p>
+                                {nextSchedule.subject ? (
+                                    <div>
+                                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                            {nextSchedule.subject}
+                                        </h3>
+                                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4">
+                                            <Clock className="w-4 h-4" />
+                                            <span className="text-lg font-semibold">
+                                                {nextSchedule.startTime}
+                                            </span>
                                         </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Today's Schedule List */}
-                            <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 flex flex-col overflow-hidden">
-                                <div className="p-4 border-b border-white/20 flex-shrink-0">
-                                    <h3 className="text-white font-bold text-lg">
-                                        Jadwal Ruangan Hari Ini - {currentDay}
-                                    </h3>
-                                    <p className="text-white/60 text-xs mt-1">
-                                        Kelas yang menggunakan ruangan ini
-                                    </p>
-                                </div>
-                                <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                                    {todaySchedules.length > 0 ? (
-                                        todaySchedules.map((schedule) => (
-                                            <div
-                                                key={schedule.id}
-                                                className={`p-3 rounded-xl border transition-all ${
-                                                    schedule.is_current
-                                                        ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg shadow-blue-500/20"
-                                                        : "bg-white/5 border-white/10 hover:bg-white/10"
-                                                }`}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                        <div className="flex-shrink-0">
-                                                            <div className="text-white font-bold text-sm">
-                                                                {
-                                                                    schedule.startTime
-                                                                }
-                                                            </div>
-                                                            <div className="text-white/60 text-xs">
-                                                                {
-                                                                    schedule.endTime
-                                                                }
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2 mb-0.5">
-                                                                <span className="text-white font-semibold text-sm truncate">
-                                                                    {
-                                                                        schedule.subject
-                                                                    }
-                                                                </span>
-                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-medium flex-shrink-0">
-                                                                    {
-                                                                        schedule.kelas
-                                                                    }
-                                                                </span>
-                                                            </div>
-                                                            <div className="text-white/70 text-xs truncate">
-                                                                {
-                                                                    schedule.teacher
-                                                                }
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    {schedule.is_current && (
-                                                        <div className="flex-shrink-0 ml-2">
-                                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/30 border border-green-400/50 text-green-200 text-xs font-medium">
-                                                                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                                                                LIVE
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-center py-8 text-white/60">
-                                            Tidak ada jadwal untuk hari ini
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <h3 className="text-3xl font-bold text-gray-400 dark:text-gray-600 mb-2">
+                                            Belum ada jadwal
+                                        </h3>
+                                        <div className="flex items-center gap-2 text-gray-400 dark:text-gray-600 mb-4">
+                                            <Clock className="w-4 h-4" />
+                                            <span className="text-lg font-semibold">
+                                                --:--
+                                            </span>
                                         </div>
-                                    )}
-                                </div>
+                                        <p className="text-sm text-gray-400 dark:text-gray-600 font-semibold invisible">
+                                            Placeholder text
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
+
+                    {/* Bottom Row - Teacher/PIC & Schedule/Video */}
+                    <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
+                        {/* Teacher/PIC Card - FULL PHOTO Display */}
+                        <div className="col-span-4 bg-gradient-to-br from-white/90 to-white/70 dark:from-gray-900/90 dark:to-gray-900/70 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg overflow-hidden relative">
+                            {currentSchedule.teacher ? (
+                                <>
+                                    {/* Badge - Floating on top */}
+                                    <div className="absolute top-6 left-6 z-10 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/90 to-indigo-600/90 backdrop-blur-xl rounded-2xl shadow-xl">
+                                        <Sparkles className="w-4 h-4 text-white" />
+                                        <span className="text-sm font-bold text-white">
+                                            Penanggung Jawab
+                                        </span>
+                                    </div>
+
+                                    {/* Full Photo - Fill entire card */}
+                                    {currentSchedule.teacher.avatar ? (
+                                        <img
+                                            src={
+                                                currentSchedule.teacher.avatar.startsWith(
+                                                    "http"
+                                                )
+                                                    ? currentSchedule.teacher
+                                                          .avatar
+                                                    : `/storage/${currentSchedule.teacher.avatar}`
+                                            }
+                                            alt={currentSchedule.teacher.name}
+                                            className="w-full h-full object-cover object-top"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 flex items-center justify-center">
+                                            <UserIcon className="w-32 h-32 text-white" />
+                                        </div>
+                                    )}
+
+                                    {/* Name overlay - Bottom */}
+                                    <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent backdrop-blur-sm">
+                                        <h3 className="text-3xl font-bold text-white mb-1">
+                                            {currentSchedule.teacher.name}
+                                        </h3>
+                                        {currentSchedule.subject && (
+                                            <p className="text-lg text-blue-300 font-semibold">
+                                                {currentSchedule.subject}
+                                            </p>
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center mb-6">
+                                        <UserIcon className="w-16 h-16 text-gray-400 dark:text-gray-600" />
+                                    </div>
+                                    <p className="text-xl text-gray-500 dark:text-gray-400">
+                                        Tidak ada jadwal
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Bottom - Schedule List or Video */}
+                        <div className="col-span-8 min-h-0">
+                            {isBreakTime && videos.length > 0 ? (
+                                /* Video Player - Bento Style */
+                                <div className="h-full bg-gradient-to-br from-gray-900 to-black rounded-3xl overflow-hidden shadow-2xl relative">
+                                    {/* Video Header */}
+                                    <div className="absolute top-0 left-0 right-0 z-10 p-6 bg-gradient-to-b from-black/80 to-transparent">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                                                    <VideoIcon className="w-6 h-6 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-white font-bold text-lg">
+                                                        Video Waktu Istirahat
+                                                    </h3>
+                                                    <p className="text-gray-300 text-sm">
+                                                        {videos[
+                                                            currentVideoIndex
+                                                        ]?.judul ||
+                                                            "Sedang Diputar"}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="px-4 py-2 bg-white/10 backdrop-blur-xl rounded-xl">
+                                                <span className="text-white font-semibold">
+                                                    {currentVideoIndex + 1} /{" "}
+                                                    {videos.length}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Video */}
+                                    <video
+                                        key={videos[currentVideoIndex]?.id}
+                                        src={
+                                            videos[currentVideoIndex]?.file_url
+                                        }
+                                        autoPlay
+                                        muted
+                                        playsInline
+                                        className="w-full h-full object-contain"
+                                        onEnded={() => {
+                                            const nextIndex =
+                                                (currentVideoIndex + 1) %
+                                                videos.length;
+                                            setCurrentVideoIndex(nextIndex);
+                                        }}
+                                    />
+
+                                    {/* Bottom Gradient */}
+                                    <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none"></div>
+                                </div>
+                            ) : (
+                                /* Schedule List - Bento Style */
+                                <div className="h-full bg-gradient-to-br from-white/90 to-white/70 dark:from-gray-900/90 dark:to-gray-900/70 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg flex flex-col relative">
+                                    {/* Header */}
+                                    <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                                                <Calendar className="w-5 h-5 text-white" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                                    Jadwal Hari Ini
+                                                </h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                    {currentDay} •{" "}
+                                                    {todaySchedules.length}{" "}
+                                                    Kelas
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Schedule Items - Scrollable */}
+                                    <div className="flex-1 overflow-y-auto p-6 scrollbar-hide relative min-h-0">
+                                        {todaySchedules.length > 0 ? (
+                                            <div className="space-y-3">
+                                                {todaySchedules.map(
+                                                    (schedule) => (
+                                                        <div
+                                                            key={schedule.id}
+                                                            className={`p-5 rounded-2xl border-2 transition-all duration-300 ${
+                                                                schedule.is_current
+                                                                    ? "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-lg scale-[1.02]"
+                                                                    : "bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md"
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-start gap-4">
+                                                                {/* Time Badge */}
+                                                                <div
+                                                                    className={`flex-shrink-0 px-4 py-3 rounded-xl text-center min-w-[80px] ${
+                                                                        schedule.is_current
+                                                                            ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white"
+                                                                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                                                    }`}
+                                                                >
+                                                                    <div className="text-lg font-bold leading-tight">
+                                                                        {
+                                                                            schedule.startTime
+                                                                        }
+                                                                    </div>
+                                                                    <div className="text-xs opacity-90">
+                                                                        {
+                                                                            schedule.endTime
+                                                                        }
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Content */}
+                                                                <div className="flex-1">
+                                                                    <div className="flex items-start justify-between gap-3 mb-2">
+                                                                        <h4 className="text-xl font-bold text-gray-900 dark:text-white">
+                                                                            {
+                                                                                schedule.subject
+                                                                            }
+                                                                        </h4>
+                                                                        <span className="px-3 py-1 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-sm font-bold">
+                                                                            {
+                                                                                schedule.kelas
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-gray-600 dark:text-gray-400">
+                                                                        {
+                                                                            schedule.teacher
+                                                                        }
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="h-full flex flex-col items-center justify-center text-center">
+                                                <Calendar className="w-24 h-24 text-gray-300 dark:text-gray-600 mb-4" />
+                                                <p className="text-xl text-gray-500 dark:text-gray-400">
+                                                    Tidak ada jadwal hari ini
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Bottom Blur Indicator */}
+                                    {todaySchedules.length > 3 && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white dark:from-gray-900 via-white/80 dark:via-gray-900/80 to-transparent pointer-events-none rounded-b-3xl"></div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
+
+                {/* Success Notification - Floating with fade in/out animation */}
+                {justRefreshed && (
+                    <div
+                        className={`fixed top-24 right-6 z-50 transition-all duration-300 ${
+                            isClosing
+                                ? "animate-out slide-out-to-top-4 fade-out"
+                                : "animate-in slide-in-from-top-4 fade-in"
+                        }`}
+                    >
+                        <div className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl shadow-2xl">
+                            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                            <span className="font-semibold">
+                                Berhasil diperbarui
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Admin Link - Floating Button */}
+                {auth.user && (
+                    <Link
+                        href={route("admin.dashboard")}
+                        className="fixed bottom-6 right-6 w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 hover:from-blue-700 hover:via-blue-800 hover:to-indigo-800 flex items-center justify-center shadow-2xl shadow-blue-500/50 transition-all hover:scale-110 group"
+                        title="Admin Dashboard"
+                    >
+                        <Sparkles className="w-6 h-6 text-white group-hover:rotate-12 transition-transform" />
+                    </Link>
+                )}
             </div>
         </>
     );
