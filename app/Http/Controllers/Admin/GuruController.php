@@ -107,18 +107,14 @@ class GuruController extends Controller
 
     public function edit(User $guru): Response
     {
-        try {
-            return Inertia::render('Admin/Guru/Edit', [
-                'guru' => [
-                    'id' => $guru->id,
-                    'name' => $guru->name,
-                    'email' => $guru->email,
-                    'avatar' => $guru->avatar,
-                ],
-            ]);
-        } catch (ModelNotFoundException $e) {
-            abort(404, 'Guru tidak ditemukan');
-        }
+        return Inertia::render('Admin/Guru/Edit', [
+            'guru' => [
+                'id' => $guru->id,
+                'name' => $guru->name,
+                'email' => $guru->email,
+                'avatar' => $guru->avatar,
+            ],
+        ]);
     }
 
     public function update(Request $request, User $guru)

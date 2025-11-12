@@ -78,16 +78,12 @@ class MapelController extends Controller
 
     public function edit(Mapel $mapel): Response
     {
-        try {
-            return Inertia::render('Admin/Mapel/Edit', [
-                'mapel' => [
-                    'id' => $mapel->id,
-                    'nama_mapel' => $mapel->nama_mapel,
-                ],
-            ]);
-        } catch (ModelNotFoundException $e) {
-            abort(404, 'Mata pelajaran tidak ditemukan');
-        }
+        return Inertia::render('Admin/Mapel/Edit', [
+            'mapel' => [
+                'id' => $mapel->id,
+                'nama_mapel' => $mapel->nama_mapel,
+            ],
+        ]);
     }
 
     public function update(Request $request, Mapel $mapel)

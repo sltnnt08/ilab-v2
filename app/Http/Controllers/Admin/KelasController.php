@@ -77,16 +77,12 @@ class KelasController extends Controller
 
     public function edit(Classes $kelas): Response
     {
-        try {
-            return Inertia::render('Admin/Kelas/Edit', [
-                'kelas' => [
-                    'id' => $kelas->id,
-                    'class' => $kelas->class,
-                ],
-            ]);
-        } catch (ModelNotFoundException $e) {
-            abort(404, 'Kelas tidak ditemukan');
-        }
+        return Inertia::render('Admin/Kelas/Edit', [
+            'kelas' => [
+                'id' => $kelas->id,
+                'class' => $kelas->class,
+            ],
+        ]);
     }
 
     public function update(Request $request, Classes $kelas)

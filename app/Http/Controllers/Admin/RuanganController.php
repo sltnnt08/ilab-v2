@@ -88,21 +88,17 @@ class RuanganController extends Controller
 
     public function edit(Ruangan $ruangan): Response
     {
-        try {
-            $users = User::orderBy('name')->get(['id', 'name']);
+        $users = User::orderBy('name')->get(['id', 'name']);
 
-            return Inertia::render('Admin/Ruangan/Edit', [
-                'ruangan' => [
-                    'id' => $ruangan->id,
-                    'nama_ruangan' => $ruangan->nama_ruangan,
-                    'keterangan' => $ruangan->keterangan,
-                    'default_pic_id' => $ruangan->default_pic_id,
-                ],
-                'users' => $users,
-            ]);
-        } catch (ModelNotFoundException $e) {
-            abort(404, 'Ruangan tidak ditemukan');
-        }
+        return Inertia::render('Admin/Ruangan/Edit', [
+            'ruangan' => [
+                'id' => $ruangan->id,
+                'nama_ruangan' => $ruangan->nama_ruangan,
+                'keterangan' => $ruangan->keterangan,
+                'default_pic_id' => $ruangan->default_pic_id,
+            ],
+            'users' => $users,
+        ]);
     }
 
     public function update(Request $request, Ruangan $ruangan)
