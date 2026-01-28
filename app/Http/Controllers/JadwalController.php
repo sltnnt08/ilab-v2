@@ -50,8 +50,42 @@ class JadwalController extends Controller
                     'is_current' => $currentTime >= $jamMulai && $currentTime <= $jamSelesai,
                     'kelas' => $jadwal->kelas->class,
                     'guru_avatar' => $jadwal->guru->avatar,
+                    'is_break' => false,
                 ];
             });
+
+        // Ambil waktu istirahat yang aktif untuk hari ini
+        $breakTimes = BreakTime::where('is_active', true)
+            ->orderBy('urutan')
+            ->get()
+            ->filter(function ($breakTime) use ($currentDay) {
+                // Filter break time berdasarkan hari
+                if ($breakTime->hari !== null && count($breakTime->hari) > 0) {
+                    return in_array($currentDay, $breakTime->hari);
+                }
+
+                // Jika hari null atau kosong, berlaku untuk semua hari
+                return true;
+            })
+            ->map(function ($breakTime) use ($currentTime) {
+                $jamMulai = is_string($breakTime->jam_mulai) ? $breakTime->jam_mulai : $breakTime->jam_mulai->format('H:i:s');
+                $jamSelesai = is_string($breakTime->jam_selesai) ? $breakTime->jam_selesai : $breakTime->jam_selesai->format('H:i:s');
+
+                return [
+                    'id' => 'break_'.$breakTime->id,
+                    'subject' => $breakTime->nama,
+                    'teacher' => 'Waktu Istirahat',
+                    'startTime' => Carbon::parse($jamMulai)->format('H:i'),
+                    'endTime' => Carbon::parse($jamSelesai)->format('H:i'),
+                    'is_current' => $currentTime >= $jamMulai && $currentTime <= $jamSelesai,
+                    'kelas' => '-',
+                    'guru_avatar' => null,
+                    'is_break' => true,
+                ];
+            });
+
+        // Gabungkan jadwal kelas dan istirahat, lalu urutkan berdasarkan jam mulai
+        $todaySchedules = $todaySchedules->concat($breakTimes)->sortBy('startTime')->values();
 
         // Jadwal yang sedang berlangsung
         $currentSchedule = $todaySchedules->firstWhere('is_current', true);

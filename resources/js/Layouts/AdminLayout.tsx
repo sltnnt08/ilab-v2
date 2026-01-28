@@ -36,7 +36,7 @@ export default function AdminLayout({
             {/* Sidebar Mobile */}
             <div
                 className={`fixed inset-0 z-40 lg:hidden ${
-                    sidebarOpen ? "block" : "hidden"
+                    sidebarOpen ? "block" : "hidden"    
                 }`}
             >
                 <div

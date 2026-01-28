@@ -31,13 +31,14 @@ interface User {
 }
 
 interface Schedule {
-    id: number;
+    id: number | string;
     subject: string;
     teacher: string;
     startTime: string;
     endTime: string;
     is_current: boolean;
     kelas: string;
+    is_break?: boolean;
 }
 
 interface Video {
@@ -568,7 +569,11 @@ export default function Index({
                                                         <div
                                                             key={schedule.id}
                                                             className={`p-5 rounded-2xl border-2 transition-all duration-300 ${
-                                                                schedule.is_current
+                                                                schedule.is_break
+                                                                    ? schedule.is_current
+                                                                        ? "bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/30 dark:to-amber-900/30 border-orange-300 dark:border-orange-600 shadow-lg scale-[1.02]"
+                                                                        : "bg-orange-50/50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md"
+                                                                    : schedule.is_current
                                                                     ? "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-lg scale-[1.02]"
                                                                     : "bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md"
                                                             }`}
@@ -577,7 +582,11 @@ export default function Index({
                                                                 {/* Time Badge */}
                                                                 <div
                                                                     className={`flex-shrink-0 px-4 py-3 rounded-xl text-center min-w-[80px] ${
-                                                                        schedule.is_current
+                                                                        schedule.is_break
+                                                                            ? schedule.is_current
+                                                                                ? "bg-gradient-to-br from-orange-600 to-amber-600 text-white"
+                                                                                : "bg-orange-100 dark:bg-orange-800 text-orange-700 dark:text-orange-300"
+                                                                            : schedule.is_current
                                                                             ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white"
                                                                             : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                                                                     }`}
@@ -597,18 +606,32 @@ export default function Index({
                                                                 {/* Content */}
                                                                 <div className="flex-1">
                                                                     <div className="flex items-start justify-between gap-3 mb-2">
-                                                                        <h4 className="text-xl font-bold text-gray-900 dark:text-white">
+                                                                        <h4
+                                                                            className={`text-xl font-bold ${
+                                                                                schedule.is_break
+                                                                                    ? "text-orange-900 dark:text-orange-100"
+                                                                                    : "text-gray-900 dark:text-white"
+                                                                            }`}
+                                                                        >
                                                                             {
                                                                                 schedule.subject
                                                                             }
                                                                         </h4>
-                                                                        <span className="px-3 py-1 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-sm font-bold">
-                                                                            {
-                                                                                schedule.kelas
-                                                                            }
-                                                                        </span>
+                                                                        {!schedule.is_break && (
+                                                                            <span className="px-3 py-1 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-sm font-bold">
+                                                                                {
+                                                                                    schedule.kelas
+                                                                                }
+                                                                            </span>
+                                                                        )}
                                                                     </div>
-                                                                    <p className="text-gray-600 dark:text-gray-400">
+                                                                    <p
+                                                                        className={`${
+                                                                            schedule.is_break
+                                                                                ? "text-orange-600 dark:text-orange-400 italic"
+                                                                                : "text-gray-600 dark:text-gray-400"
+                                                                        }`}
+                                                                    >
                                                                         {
                                                                             schedule.teacher
                                                                         }
