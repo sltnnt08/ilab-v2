@@ -35,7 +35,10 @@ class RuanganSeeder extends Seeder
         ];
 
         foreach ($ruangans as $ruangan) {
-            Ruangan::create($ruangan);
+            Ruangan::query()->updateOrCreate(
+                ['nama_ruangan' => $ruangan['nama_ruangan']],
+                $ruangan,
+            );
         }
     }
 }

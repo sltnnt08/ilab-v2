@@ -40,7 +40,10 @@ class BreakTimeSeeder extends Seeder
         ];
 
         foreach ($breakTimes as $breakTime) {
-            BreakTime::create($breakTime);
+            BreakTime::query()->updateOrCreate(
+                ['nama' => $breakTime['nama']],
+                $breakTime,
+            );
         }
     }
 }
